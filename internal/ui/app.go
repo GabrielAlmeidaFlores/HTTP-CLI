@@ -72,6 +72,10 @@ type App struct {
 	cellEditCursor int
 	cellEditCommit func(string)
 
+	showCurlImport   bool
+	curlImportVal    string
+	curlImportCursor int
+
 	executing bool
 	err       error
 }
@@ -143,6 +147,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if a.showCellEdit {
 			cmds = append(cmds, a.handleCellEditModal(msg))
+			break
+		}
+		if a.showCurlImport {
+			cmds = append(cmds, a.handleCurlImportModal(msg))
 			break
 		}
 		cmds = append(cmds, a.handleKey(msg))
@@ -448,6 +456,11 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			a.selectRequest(req)
 		})
 
+	case "import_curl":
+		a.curlImportVal = ""
+		a.curlImportCursor = 0
+		a.showCurlImport = true
+
 	case "delete_request":
 		if a.selectedReq != nil {
 			req := a.selectedReq
@@ -652,6 +665,9 @@ func (a *App) View() string {
 		return a.renderCellEditModal()
 	}
 
+	if a.showCurlImport {
+		return a.renderCurlImportModal()
+	}
 	topBar := a.renderTopBar()
 	mainArea := a.renderMainArea()
 	statusBar := a.renderStatusBar()
@@ -862,6 +878,135 @@ func (a *App) renderCellEditModal() string {
 		titleStyle.Render(a.cellEditTitle),
 		"",
 		textAreaStyle.Render(textContent),
+		"",
+		hints,
+	)
+
+	modal := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#00d7ff")).
+		Padding(1, 2).
+		Width(modalW).
+		Render(body)
+
+	return lipgloss.Place(a.width, a.height,
+		lipgloss.Center, lipgloss.Center,
+		modal,
+		lipgloss.WithWhitespaceBackground(lipgloss.Color("#000000")),
+	)
+}
+
+func (a *App) handleCurlImportModal(msg tea.KeyMsg) tea.Cmd {
+	key := msg.String()
+	runes := []rune(a.curlImportVal)
+	n := len(runes)
+
+	switch key {
+	case "enter":
+		req, err := transport.ParseCurlCommand(a.curlImportVal)
+		if err != nil {
+			a.setStatus("Import error: " + err.Error())
+			a.showCurlImport = false
+			return nil
+		}
+		_ = a.store.SaveRequest(context.Background(), req)
+		a.requests = append(a.requests, req)
+		a.requestList.setRequests(a.requests)
+		a.selectRequest(req)
+		a.showCurlImport = false
+		a.setStatus("Imported: " + req.Name)
+		return a.loadRequests()
+	case "ctrl+v":
+		text, err := clipboard.ReadAll()
+		if err == nil {
+			newRunes := make([]rune, n+len([]rune(text)))
+			copy(newRunes, runes[:a.curlImportCursor])
+			copy(newRunes[a.curlImportCursor:], []rune(text))
+			copy(newRunes[a.curlImportCursor+len([]rune(text)):], runes[a.curlImportCursor:])
+			a.curlImportVal = string(newRunes)
+			a.curlImportCursor += len([]rune(text))
+		}
+	case "esc":
+		a.showCurlImport = false
+	case "backspace":
+		if a.curlImportCursor > 0 {
+			a.curlImportVal = string(runes[:a.curlImportCursor-1]) + string(runes[a.curlImportCursor:])
+			a.curlImportCursor--
+		}
+	case "left":
+		if a.curlImportCursor > 0 {
+			a.curlImportCursor--
+		}
+	case "right":
+		if a.curlImportCursor < n {
+			a.curlImportCursor++
+		}
+	case "home", "ctrl+a":
+		a.curlImportCursor = 0
+	case "end", "ctrl+e":
+		a.curlImportCursor = n
+	default:
+		r := []rune(key)
+		if len(r) == 1 && r[0] >= 32 && r[0] != 127 {
+			newRunes := make([]rune, n+1)
+			copy(newRunes, runes[:a.curlImportCursor])
+			newRunes[a.curlImportCursor] = r[0]
+			copy(newRunes[a.curlImportCursor+1:], runes[a.curlImportCursor:])
+			a.curlImportVal = string(newRunes)
+			a.curlImportCursor++
+		}
+	}
+	return nil
+}
+
+func (a *App) renderCurlImportModal() string {
+	modalW := a.width * 3 / 4
+	if modalW > 110 {
+		modalW = 110
+	}
+	if modalW < 50 {
+		modalW = 50
+	}
+	contentW := modalW - 6
+
+	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00d7ff"))
+	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+
+	runes := []rune(a.curlImportVal)
+	cursor := a.curlImportCursor
+	before := string(runes[:cursor])
+	after := ""
+	if cursor < len(runes) {
+		after = string(runes[cursor:])
+	}
+	textContent := before + "█" + after
+
+	inputStyle := lipgloss.NewStyle().
+		Width(contentW).
+		Height(4).
+		Padding(0, 1).
+		Background(lipgloss.Color("#1c1c2c")).
+		Foreground(lipgloss.Color("#ffffff"))
+
+	dimKey := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00d7ff"))
+	descStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+
+	hints := lipgloss.JoinHorizontal(lipgloss.Top,
+		dimKey.Render("enter")+" "+descStyle.Render("import"),
+		"   ",
+		dimKey.Render("ctrl+v")+" "+descStyle.Render("paste"),
+		"   ",
+		dimKey.Render("esc")+" "+descStyle.Render("cancel"),
+	)
+
+	example := dimStyle.Render("e.g. curl -X POST https://api.example.com -H 'Content-Type: application/json' -d '{\"key\":\"val\"}'")
+
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render("Import from cURL"),
+		"",
+		example,
+		"",
+		inputStyle.Render(textContent),
 		"",
 		hints,
 	)

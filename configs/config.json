@@ -26,6 +26,7 @@
     },
     "request_list": {
       "new_request": { "keys": ["n"], "description": "New request", "category": "Requests", "visible": true },
+      "import_curl": { "keys": ["I"], "description": "Import cURL", "category": "Requests", "visible": true },
       "delete_request": { "keys": ["d"], "description": "Delete request", "category": "Requests", "visible": true },
       "duplicate_request": { "keys": ["y"], "description": "Duplicate", "category": "Requests", "visible": true },
       "rename_request": { "keys": ["r"], "description": "Rename", "category": "Requests", "visible": true },
