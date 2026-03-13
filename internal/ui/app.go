@@ -172,12 +172,16 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 
 	if a.mode == ModeInsert {
 		if key == "esc" {
-			if a.editor.IsSubEditing() {
-				return a.routeKeyToPanel(msg)
+			if a.focused == PanelEditor && a.editor.IsSubEditing() {
+				a.editor.CancelSubEdit()
+				return nil
 			}
 			a.mode = ModeNormal
 			a.editor.Reset()
 			return nil
+		}
+		if key == "ctrl+e" {
+			return a.executeRequest()
 		}
 		return a.routeKeyToPanel(msg)
 	}

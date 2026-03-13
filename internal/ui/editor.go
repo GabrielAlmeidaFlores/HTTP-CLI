@@ -24,60 +24,119 @@ TabAuth    EditorTab = "Auth"
 
 var editorTabs = []EditorTab{TabURL, TabHeaders, TabBody, TabQuery, TabAuth}
 
-var allBodyTypes = []models.BodyType{
-models.BodyNone,
-models.BodyRaw,
-models.BodyJSON,
-models.BodyFormData,
-models.BodyURLEncoded,
-}
-
 type EditorModel struct {
-keybindMgr   *keybindings.Manager
-request      *models.Request
-activeTab    EditorTab
-editingField string
-fieldValue   string
-cursorPos    int
-width        int
-height       int
-headerIdx    int
-queryIdx     int
-tableRow     int
-tableCol     int
-tableEditing bool
-bodyTypes    []models.BodyType
-bodyTypeIdx  int
+keybindMgr *keybindings.Manager
+request    *models.Request
+activeTab  EditorTab
+width      int
+height     int
+
+urlRowIdx  int
+methodSel  selectBox
+urlEditing bool
+urlEditVal string
+urlCursor  int
+
+headersTable kvTable
+
+bodyRowIdx    int
+bodyTypeSel   selectBox
+bodyEditing   bool
+bodyEditVal   string
+bodyCursor    int
+bodyFormTable kvTable
+
+queryTable kvTable
+
+authRowIdx  int
+authTypeSel selectBox
+authEditing bool
+authEditVal string
+authCursor  int
 }
 
 func newEditorModel(km *keybindings.Manager) EditorModel {
 return EditorModel{
-keybindMgr: km,
-activeTab:  TabURL,
-bodyTypes:  allBodyTypes,
-tableCol:   1,
+keybindMgr:    km,
+activeTab:     TabURL,
+methodSel:     newSelectBox(methodOptions(), "GET"),
+bodyTypeSel:   newSelectBox(bodyTypeOptions(), "none"),
+authTypeSel:   newSelectBox(authTypeOptions(), "none"),
+headersTable:  newKvTable(nil),
+queryTable:    newKvTable(nil),
+bodyFormTable: newKvTable(nil),
 }
+}
+
+func methodOptions() []string {
+return []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"}
+}
+
+func bodyTypeOptions() []string {
+return []string{"none", "json", "raw", "form-data", "urlencoded"}
+}
+
+func authTypeOptions() []string {
+return []string{"none", "bearer", "basic", "apikey"}
 }
 
 func (m *EditorModel) setRequest(req *models.Request) {
 m.request = req
-m.activeTab = TabURL
-m.editingField = ""
-m.fieldValue = ""
-m.tableRow = 0
-m.tableCol = 1
-m.tableEditing = false
-m.headerIdx = 0
-m.queryIdx = 0
-m.bodyTypeIdx = 0
-if req != nil {
-for i, bt := range allBodyTypes {
-if bt == req.Body.Type {
-m.bodyTypeIdx = i
-break
+m.syncFromRequest()
 }
+
+func (m *EditorModel) syncFromRequest() {
+if m.request == nil {
+return
 }
+m.methodSel = newSelectBox(methodOptions(), string(m.request.Method))
+m.urlEditing = false
+m.urlEditVal = m.request.URL
+m.urlCursor = len([]rune(m.urlEditVal))
+m.urlRowIdx = 0
+
+hRows := make([]kvRow, len(m.request.Headers))
+for i, h := range m.request.Headers {
+hRows[i] = kvRow{enabled: h.Enabled, key: h.Key, value: h.Value}
 }
+m.headersTable = newKvTable(hRows)
+
+m.bodyTypeSel = newSelectBox(bodyTypeOptions(), string(m.request.Body.Type))
+m.bodyEditing = false
+m.bodyEditVal = m.request.Body.Content
+m.bodyCursor = len([]rune(m.bodyEditVal))
+m.bodyRowIdx = 0
+fRows := make([]kvRow, len(m.request.Body.FormData))
+for i, f := range m.request.Body.FormData {
+fRows[i] = kvRow{enabled: f.Enabled, key: f.Key, value: f.Value}
+}
+m.bodyFormTable = newKvTable(fRows)
+
+qRows := make([]kvRow, len(m.request.QueryParams))
+for i, p := range m.request.QueryParams {
+qRows[i] = kvRow{enabled: p.Enabled, key: p.Key, value: p.Value}
+}
+m.queryTable = newKvTable(qRows)
+
+m.authTypeSel = newSelectBox(authTypeOptions(), string(m.request.Auth.Type))
+m.authEditing = false
+m.authEditVal = ""
+m.authCursor = 0
+m.authRowIdx = 0
+}
+
+func (m *EditorModel) syncToRequest() {
+if m.request == nil {
+return
+}
+m.request.Method = models.HTTPMethod(m.methodSel.value())
+m.request.URL = m.urlEditVal
+m.request.Headers = m.headersTable.toHeaders()
+m.request.Body.Type = models.BodyType(m.bodyTypeSel.value())
+m.request.Body.Content = m.bodyEditVal
+m.request.Body.FormData = m.bodyFormTable.toFormFields()
+m.request.QueryParams = m.queryTable.toQueryParams()
+m.request.Auth.Type = models.AuthType(m.authTypeSel.value())
 }
 
 func (m *EditorModel) setSize(w, h int) {
@@ -86,7 +145,83 @@ m.height = h
 }
 
 func (m *EditorModel) IsSubEditing() bool {
-return m.tableEditing
+switch m.activeTab {
+case TabURL:
+return m.methodSel.isOpen() || m.urlEditing
+case TabHeaders:
+return m.headersTable.isSubEditing()
+case TabBody:
+return m.bodyTypeSel.isOpen() || m.bodyEditing || m.bodyFormTable.isSubEditing()
+case TabQuery:
+return m.queryTable.isSubEditing()
+case TabAuth:
+return m.authTypeSel.isOpen() || m.authEditing
+}
+return false
+}
+
+func (m *EditorModel) CancelSubEdit() {
+switch m.activeTab {
+case TabURL:
+if m.methodSel.isOpen() {
+m.methodSel.open = false
+} else if m.urlEditing {
+m.urlEditing = false
+m.urlEditVal = m.request.URL
+m.urlCursor = len([]rune(m.urlEditVal))
+}
+case TabHeaders:
+m.headersTable.cancelEdit()
+case TabBody:
+if m.bodyTypeSel.isOpen() {
+m.bodyTypeSel.open = false
+} else if m.bodyEditing {
+m.bodyEditing = false
+m.bodyEditVal = m.request.Body.Content
+m.bodyCursor = len([]rune(m.bodyEditVal))
+} else {
+m.bodyFormTable.cancelEdit()
+}
+case TabQuery:
+m.queryTable.cancelEdit()
+case TabAuth:
+if m.authTypeSel.isOpen() {
+m.authTypeSel.open = false
+} else if m.authEditing {
+m.authEditing = false
+m.authEditVal = ""
+m.authCursor = 0
+}
+}
+}
+
+func (m *EditorModel) Reset() {
+m.methodSel.open = false
+m.urlEditing = false
+if m.request != nil {
+m.urlEditVal = m.request.URL
+}
+m.urlCursor = len([]rune(m.urlEditVal))
+m.headersTable.cancelEdit()
+m.bodyTypeSel.open = false
+m.bodyEditing = false
+if m.request != nil {
+m.bodyEditVal = m.request.Body.Content
+}
+m.bodyCursor = len([]rune(m.bodyEditVal))
+m.bodyFormTable.cancelEdit()
+m.queryTable.cancelEdit()
+m.authTypeSel.open = false
+m.authEditing = false
+m.authEditVal = ""
+m.authCursor = 0
+}
+
+func (m *EditorModel) StartEditing(req *models.Request) {
+if req != nil {
+m.request = req
+m.syncFromRequest()
+}
 }
 
 func (m *EditorModel) handleKey(msg tea.KeyMsg, req *models.Request) tea.Cmd {
@@ -95,500 +230,365 @@ return nil
 }
 m.request = req
 key := msg.String()
-switch m.editingField {
-case "":
-return m.handleNormalKey(key)
-case "table_nav":
-return m.handleTableNavKey(key)
-case "table_cell", "body_raw", "auth_token":
-return m.handleTextEditKey(key)
-}
-return nil
-}
 
-func (m *EditorModel) handleNormalKey(key string) tea.Cmd {
 switch key {
 case "]":
 m.nextTab()
+m.syncFromRequest()
+return nil
 case "[":
 m.prevTab()
-case "i", "enter":
-m.startEditing()
-}
+m.syncFromRequest()
 return nil
 }
 
-func (m *EditorModel) handleTableNavKey(key string) tea.Cmd {
-switch key {
-case "]":
-m.nextTab()
-m.tableRow = 0
-m.tableCol = 1
-return nil
-case "[":
-m.prevTab()
-m.tableRow = 0
-m.tableCol = 1
-return nil
-}
 switch m.activeTab {
 case TabURL:
-return m.handleURLNavKey(key)
+m.handleURLKey(key)
 case TabHeaders:
-return m.handleHeadersNavKey(key)
-case TabQuery:
-return m.handleQueryNavKey(key)
+m.handleHeadersKey(key)
 case TabBody:
-return m.handleBodyNavKey(key)
+m.handleBodyKey(key)
+case TabQuery:
+m.handleQueryKey(key)
 case TabAuth:
-return m.handleAuthNavKey(key)
+m.handleAuthKey(key)
 }
+
+m.syncToRequest()
 return nil
 }
 
-func (m *EditorModel) handleURLNavKey(key string) tea.Cmd {
-switch key {
-case "down":
-if m.tableRow < 1 {
-m.tableRow++
+func (m *EditorModel) handleURLKey(key string) {
+if m.urlRowIdx == 0 {
+if m.methodSel.isOpen() {
+consumed, changed := m.methodSel.handleKey(key)
+if consumed {
+if changed {
+m.request.Method = models.HTTPMethod(m.methodSel.value())
 }
-case "up":
-if m.tableRow > 0 {
-m.tableRow--
+return
 }
-case "left":
-if m.tableRow == 0 {
-m.cycleMethod(-1)
-}
-case "right":
-if m.tableRow == 0 {
-m.cycleMethod(1)
-}
-case "enter", "i":
-if m.tableRow == 1 {
-m.startCellEdit(m.request.URL)
 } else {
-m.cycleMethod(1)
+switch key {
+case "j", "down":
+m.urlRowIdx = 1
+case "enter", " ":
+m.methodSel.open = true
+case "l", "right":
+m.methodSel.next()
+case "h", "left":
+m.methodSel.prev()
 }
 }
-return nil
+return
 }
 
-func (m *EditorModel) handleHeadersNavKey(key string) tea.Cmd {
-n := len(m.request.Headers)
+if m.urlEditing {
 switch key {
-case "down":
-if m.tableRow >= n-1 {
-m.request.Headers = append(m.request.Headers, models.Header{Enabled: true})
-}
-m.tableRow++
-m.headerIdx = m.tableRow
-case "up":
-if m.tableRow > 0 {
-m.tableRow--
-}
-m.headerIdx = m.tableRow
-case "left":
-if m.tableCol > 1 {
-m.tableCol--
-}
-case "right":
-if m.tableCol < 2 {
-m.tableCol++
-}
-case "tab":
-if m.tableCol == 1 {
-m.tableCol = 2
-} else {
-m.tableCol = 1
-}
-case "enter", "i":
-n2 := len(m.request.Headers)
-if n2 > 0 {
-m.startCellEdit(m.currentCellValue())
-}
-case "d":
-if n > 0 && m.tableRow < n {
-m.request.Headers = append(m.request.Headers[:m.tableRow], m.request.Headers[m.tableRow+1:]...)
-if m.tableRow >= len(m.request.Headers) && m.tableRow > 0 {
-m.tableRow--
-}
-m.headerIdx = m.tableRow
-}
-case "space":
-if n > 0 && m.tableRow < n {
-m.request.Headers[m.tableRow].Enabled = !m.request.Headers[m.tableRow].Enabled
-}
-}
-return nil
-}
-
-func (m *EditorModel) handleQueryNavKey(key string) tea.Cmd {
-n := len(m.request.QueryParams)
-switch key {
-case "down":
-if m.tableRow >= n-1 {
-m.request.QueryParams = append(m.request.QueryParams, models.QueryParam{Enabled: true})
-}
-m.tableRow++
-m.queryIdx = m.tableRow
-case "up":
-if m.tableRow > 0 {
-m.tableRow--
-}
-m.queryIdx = m.tableRow
-case "left":
-if m.tableCol > 1 {
-m.tableCol--
-}
-case "right":
-if m.tableCol < 2 {
-m.tableCol++
-}
-case "tab":
-if m.tableCol == 1 {
-m.tableCol = 2
-} else {
-m.tableCol = 1
-}
-case "enter", "i":
-n2 := len(m.request.QueryParams)
-if n2 > 0 {
-m.startCellEdit(m.currentCellValue())
-}
-case "d":
-if n > 0 && m.tableRow < n {
-m.request.QueryParams = append(m.request.QueryParams[:m.tableRow], m.request.QueryParams[m.tableRow+1:]...)
-if m.tableRow >= len(m.request.QueryParams) && m.tableRow > 0 {
-m.tableRow--
-}
-m.queryIdx = m.tableRow
-}
-case "space":
-if n > 0 && m.tableRow < n {
-m.request.QueryParams[m.tableRow].Enabled = !m.request.QueryParams[m.tableRow].Enabled
-}
-}
-return nil
-}
-
-func (m *EditorModel) handleBodyNavKey(key string) tea.Cmd {
-bt := m.request.Body.Type
-n := len(m.request.Body.FormData)
-switch key {
-case "t":
-m.cycleBodyType()
-case "down":
-if bt == models.BodyFormData || bt == models.BodyURLEncoded {
-if m.tableRow >= n-1 {
-m.request.Body.FormData = append(m.request.Body.FormData, models.FormField{
-Enabled: true,
-Type:    models.FormFieldText,
-})
-}
-m.tableRow++
-}
-case "up":
-if (bt == models.BodyFormData || bt == models.BodyURLEncoded) && m.tableRow > 0 {
-m.tableRow--
-}
-case "left":
-if bt == models.BodyFormData || bt == models.BodyURLEncoded {
-if m.tableCol > 1 {
-m.tableCol--
-}
-}
-case "right":
-if bt == models.BodyFormData {
-if m.tableCol < 3 {
-m.tableCol++
-}
-} else if bt == models.BodyURLEncoded {
-if m.tableCol < 2 {
-m.tableCol++
-}
-}
-case "tab":
-if bt == models.BodyFormData {
-if m.tableCol < 3 {
-m.tableCol++
-} else {
-m.tableCol = 1
-}
-} else if bt == models.BodyURLEncoded {
-if m.tableCol == 1 {
-m.tableCol = 2
-} else {
-m.tableCol = 1
-}
-}
-case "enter", "i":
-if bt == models.BodyRaw || bt == models.BodyJSON {
-m.editingField = "body_raw"
-m.fieldValue = m.request.Body.Content
-m.cursorPos = len([]rune(m.fieldValue))
-m.tableEditing = true
-} else if (bt == models.BodyFormData || bt == models.BodyURLEncoded) && n > 0 {
-if bt == models.BodyFormData && m.tableCol == 3 {
-m.toggleFormDataType()
-} else {
-m.startCellEdit(m.currentCellValue())
-}
-}
-case "d":
-if (bt == models.BodyFormData || bt == models.BodyURLEncoded) && n > 0 && m.tableRow < n {
-m.request.Body.FormData = append(m.request.Body.FormData[:m.tableRow], m.request.Body.FormData[m.tableRow+1:]...)
-if m.tableRow >= len(m.request.Body.FormData) && m.tableRow > 0 {
-m.tableRow--
-}
-}
-case "space":
-if bt == models.BodyFormData && n > 0 && m.tableRow < n {
-if m.tableCol == 3 {
-m.toggleFormDataType()
-} else {
-m.request.Body.FormData[m.tableRow].Enabled = !m.request.Body.FormData[m.tableRow].Enabled
-}
-} else if bt == models.BodyURLEncoded && n > 0 && m.tableRow < n {
-m.request.Body.FormData[m.tableRow].Enabled = !m.request.Body.FormData[m.tableRow].Enabled
-}
-case "f":
-if bt == models.BodyFormData && n > 0 && m.tableRow < n {
-m.toggleFormDataType()
-}
-}
-return nil
-}
-
-func (m *EditorModel) handleAuthNavKey(key string) tea.Cmd {
-switch key {
-case "enter", "i":
-m.editingField = "auth_token"
-m.fieldValue = m.request.Auth.Token
-m.cursorPos = len([]rune(m.fieldValue))
-m.tableEditing = true
-}
-return nil
-}
-
-func (m *EditorModel) handleTextEditKey(key string) tea.Cmd {
-switch key {
-case "esc":
-m.cancelCellEdit()
 case "enter":
-if m.editingField == "table_cell" {
-m.commitCellEdit(false)
-} else {
-m.storeTextEdit()
-m.editingField = "table_nav"
-m.fieldValue = ""
-m.cursorPos = 0
-m.tableEditing = false
-}
-case "tab":
-if m.editingField == "table_cell" {
-m.commitCellEdit(true)
+m.urlEditing = false
+m.request.URL = m.urlEditVal
+case "backspace":
+if m.urlCursor > 0 {
+runes := []rune(m.urlEditVal)
+m.urlEditVal = string(runes[:m.urlCursor-1]) + string(runes[m.urlCursor:])
+m.urlCursor--
 }
 case "left":
-if m.cursorPos > 0 {
-m.cursorPos--
+if m.urlCursor > 0 {
+m.urlCursor--
 }
 case "right":
-runes := []rune(m.fieldValue)
-if m.cursorPos < len(runes) {
-m.cursorPos++
-}
-case "home":
-m.cursorPos = 0
-case "end":
-m.cursorPos = len([]rune(m.fieldValue))
-case "backspace":
-if m.cursorPos > 0 {
-runes := []rune(m.fieldValue)
-m.fieldValue = string(runes[:m.cursorPos-1]) + string(runes[m.cursorPos:])
-m.cursorPos--
+if m.urlCursor < len([]rune(m.urlEditVal)) {
+m.urlCursor++
 }
 default:
-if len(key) == 1 {
-runes := []rune(m.fieldValue)
+if isPrintable(key) {
+runes := []rune(m.urlEditVal)
+r := []rune(key)[0]
 newRunes := make([]rune, len(runes)+1)
-copy(newRunes, runes[:m.cursorPos])
-newRunes[m.cursorPos] = []rune(key)[0]
-copy(newRunes[m.cursorPos+1:], runes[m.cursorPos:])
-m.fieldValue = string(newRunes)
-m.cursorPos++
+copy(newRunes, runes[:m.urlCursor])
+newRunes[m.urlCursor] = r
+copy(newRunes[m.urlCursor+1:], runes[m.urlCursor:])
+m.urlEditVal = string(newRunes)
+m.urlCursor++
 }
+}
+} else {
+switch key {
+case "k", "up":
+m.urlRowIdx = 0
+case "enter", "i":
+m.urlEditing = true
+m.urlCursor = len([]rune(m.urlEditVal))
+default:
+if isPrintable(key) {
+m.urlEditing = true
+runes := []rune(m.urlEditVal)
+m.urlEditVal = string(runes) + key
+m.urlCursor = len([]rune(m.urlEditVal))
+}
+}
+}
+}
+
+func (m *EditorModel) handleHeadersKey(key string) {
+m.headersTable.handleKey(key)
+}
+
+func (m *EditorModel) handleQueryKey(key string) {
+m.queryTable.handleKey(key)
+}
+
+func (m *EditorModel) handleBodyKey(key string) {
+bt := models.BodyType(m.bodyTypeSel.value())
+
+if m.bodyRowIdx == 0 {
+if m.bodyTypeSel.isOpen() {
+consumed, changed := m.bodyTypeSel.handleKey(key)
+if consumed {
+if changed {
+m.request.Body.Type = models.BodyType(m.bodyTypeSel.value())
+bt = models.BodyType(m.bodyTypeSel.value())
+_ = bt
+}
+return
+}
+} else {
+switch key {
+case "j", "down":
+m.bodyRowIdx = 1
+case "enter", " ":
+m.bodyTypeSel.open = true
+case "l", "right":
+m.bodyTypeSel.next()
+case "h", "left":
+m.bodyTypeSel.prev()
+}
+}
+return
+}
+
+bt = models.BodyType(m.bodyTypeSel.value())
+
+switch bt {
+case models.BodyNone:
+if key == "k" || key == "up" {
+m.bodyRowIdx = 0
+}
+case models.BodyRaw, models.BodyJSON:
+m.handleBodyTextKey(key)
+case models.BodyFormData, models.BodyURLEncoded:
+if (key == "k" || key == "up") && !m.bodyFormTable.editing && m.bodyFormTable.rowIdx == 0 {
+m.bodyRowIdx = 0
+return
+}
+m.bodyFormTable.handleKey(key)
+}
+}
+
+func (m *EditorModel) handleBodyTextKey(key string) {
+if m.bodyEditing {
+switch key {
+case "enter":
+m.bodyEditing = false
+m.request.Body.Content = m.bodyEditVal
+case "backspace":
+if m.bodyCursor > 0 {
+runes := []rune(m.bodyEditVal)
+m.bodyEditVal = string(runes[:m.bodyCursor-1]) + string(runes[m.bodyCursor:])
+m.bodyCursor--
+}
+case "left":
+if m.bodyCursor > 0 {
+m.bodyCursor--
+}
+case "right":
+if m.bodyCursor < len([]rune(m.bodyEditVal)) {
+m.bodyCursor++
+}
+default:
+if isPrintable(key) {
+runes := []rune(m.bodyEditVal)
+r := []rune(key)[0]
+newRunes := make([]rune, len(runes)+1)
+copy(newRunes, runes[:m.bodyCursor])
+newRunes[m.bodyCursor] = r
+copy(newRunes[m.bodyCursor+1:], runes[m.bodyCursor:])
+m.bodyEditVal = string(newRunes)
+m.bodyCursor++
+}
+}
+} else {
+switch key {
+case "k", "up":
+m.bodyRowIdx = 0
+case "enter", "i":
+m.bodyEditing = true
+m.bodyCursor = len([]rune(m.bodyEditVal))
+default:
+if isPrintable(key) {
+m.bodyEditing = true
+m.bodyEditVal += key
+m.bodyCursor = len([]rune(m.bodyEditVal))
+}
+}
+}
+}
+
+func (m *EditorModel) authFieldNames() []string {
+switch models.AuthType(m.authTypeSel.value()) {
+case models.AuthBearer:
+return []string{"Token"}
+case models.AuthBasic:
+return []string{"Username", "Password"}
+case models.AuthAPIKey:
+return []string{"Key", "Value", "In"}
 }
 return nil
 }
 
-func (m *EditorModel) startCellEdit(value string) {
-m.editingField = "table_cell"
-m.fieldValue = value
-m.cursorPos = len([]rune(value))
-m.tableEditing = true
+func (m *EditorModel) getAuthFieldValue(idx int) string {
+switch models.AuthType(m.authTypeSel.value()) {
+case models.AuthBearer:
+if idx == 0 {
+return m.request.Auth.Token
 }
-
-func (m *EditorModel) cancelCellEdit() {
-m.editingField = "table_nav"
-m.fieldValue = ""
-m.cursorPos = 0
-m.tableEditing = false
+case models.AuthBasic:
+switch idx {
+case 0:
+return m.request.Auth.Username
+case 1:
+return m.request.Auth.Password
 }
-
-func (m *EditorModel) commitCellEdit(advanceCol bool) {
-m.storeTableCellValue()
-m.tableEditing = false
-if advanceCol {
-maxCol := 2
-if m.activeTab == TabBody && m.request.Body.Type == models.BodyFormData {
-maxCol = 3
-}
-if m.tableCol < maxCol {
-m.tableCol++
-if m.tableCol == 3 {
-m.editingField = "table_nav"
-m.fieldValue = ""
-m.cursorPos = 0
-return
-}
-m.editingField = "table_cell"
-m.fieldValue = m.currentCellValue()
-m.cursorPos = len([]rune(m.fieldValue))
-m.tableEditing = true
-return
-}
-m.tableCol = 1
-}
-m.editingField = "table_nav"
-m.fieldValue = ""
-m.cursorPos = 0
-}
-
-func (m *EditorModel) storeTextEdit() {
-switch m.editingField {
-case "body_raw":
-m.request.Body.Content = m.fieldValue
-case "auth_token":
-m.request.Auth.Token = m.fieldValue
-if m.request.Auth.Type == models.AuthNone {
-m.request.Auth.Type = models.AuthBearer
-}
-}
-}
-
-func (m *EditorModel) storeTableCellValue() {
-switch m.activeTab {
-case TabURL:
-if m.tableRow == 1 {
-m.request.URL = m.fieldValue
-}
-case TabHeaders:
-if m.tableRow < len(m.request.Headers) {
-if m.tableCol == 1 {
-m.request.Headers[m.tableRow].Key = m.fieldValue
-} else {
-m.request.Headers[m.tableRow].Value = m.fieldValue
-}
-}
-case TabQuery:
-if m.tableRow < len(m.request.QueryParams) {
-if m.tableCol == 1 {
-m.request.QueryParams[m.tableRow].Key = m.fieldValue
-} else {
-m.request.QueryParams[m.tableRow].Value = m.fieldValue
-}
-}
-case TabBody:
-if m.tableRow < len(m.request.Body.FormData) {
-if m.tableCol == 1 {
-m.request.Body.FormData[m.tableRow].Key = m.fieldValue
-} else if m.tableCol == 2 {
-m.request.Body.FormData[m.tableRow].Value = m.fieldValue
-}
-}
-}
-}
-
-func (m *EditorModel) currentCellValue() string {
-switch m.activeTab {
-case TabURL:
-if m.tableRow == 1 {
-return m.request.URL
-}
-case TabHeaders:
-if m.tableRow < len(m.request.Headers) {
-if m.tableCol == 1 {
-return m.request.Headers[m.tableRow].Key
-}
-return m.request.Headers[m.tableRow].Value
-}
-case TabQuery:
-if m.tableRow < len(m.request.QueryParams) {
-if m.tableCol == 1 {
-return m.request.QueryParams[m.tableRow].Key
-}
-return m.request.QueryParams[m.tableRow].Value
-}
-case TabBody:
-if m.tableRow < len(m.request.Body.FormData) {
-if m.tableCol == 1 {
-return m.request.Body.FormData[m.tableRow].Key
-}
-return m.request.Body.FormData[m.tableRow].Value
+case models.AuthAPIKey:
+switch idx {
+case 0:
+return m.request.Auth.Key
+case 1:
+return m.request.Auth.Value
+case 2:
+return m.request.Auth.In
 }
 }
 return ""
 }
 
-func (m *EditorModel) cycleMethod(dir int) {
-methods := models.AllMethods
-for i, mm := range methods {
-if mm == m.request.Method {
-m.request.Method = methods[(i+dir+len(methods))%len(methods)]
+func (m *EditorModel) setAuthFieldValue(idx int, val string) {
+switch models.AuthType(m.authTypeSel.value()) {
+case models.AuthBearer:
+if idx == 0 {
+m.request.Auth.Token = val
+}
+case models.AuthBasic:
+switch idx {
+case 0:
+m.request.Auth.Username = val
+case 1:
+m.request.Auth.Password = val
+}
+case models.AuthAPIKey:
+switch idx {
+case 0:
+m.request.Auth.Key = val
+case 1:
+m.request.Auth.Value = val
+case 2:
+m.request.Auth.In = val
+}
+}
+}
+
+func (m *EditorModel) handleAuthKey(key string) {
+fields := m.authFieldNames()
+
+if m.authRowIdx == 0 {
+if m.authTypeSel.isOpen() {
+consumed, changed := m.authTypeSel.handleKey(key)
+if consumed {
+if changed {
+m.request.Auth.Type = models.AuthType(m.authTypeSel.value())
+m.authRowIdx = 0
+}
 return
 }
-}
-m.request.Method = models.MethodGET
-}
-
-func (m *EditorModel) cycleBodyType() {
-m.bodyTypeIdx = (m.bodyTypeIdx + 1) % len(m.bodyTypes)
-m.request.Body.Type = m.bodyTypes[m.bodyTypeIdx]
-m.tableRow = 0
-m.tableCol = 1
-}
-
-func (m *EditorModel) toggleFormDataType() {
-if m.tableRow < len(m.request.Body.FormData) {
-if m.request.Body.FormData[m.tableRow].Type == models.FormFieldFile {
-m.request.Body.FormData[m.tableRow].Type = models.FormFieldText
 } else {
-m.request.Body.FormData[m.tableRow].Type = models.FormFieldFile
+switch key {
+case "j", "down":
+if len(fields) > 0 {
+m.authRowIdx = 1
+}
+case "enter", " ":
+m.authTypeSel.open = true
+case "l", "right":
+m.authTypeSel.next()
+m.request.Auth.Type = models.AuthType(m.authTypeSel.value())
+case "h", "left":
+m.authTypeSel.prev()
+m.request.Auth.Type = models.AuthType(m.authTypeSel.value())
 }
 }
-}
-
-func (m *EditorModel) StartEditing(req *models.Request) {
-if req != nil {
-m.request = req
-}
-m.startEditing()
-}
-
-func (m *EditorModel) Reset() {
-m.editingField = ""
-m.fieldValue = ""
-m.cursorPos = 0
-m.tableEditing = false
-}
-
-func (m *EditorModel) startEditing() {
-if m.request == nil {
 return
 }
-m.editingField = "table_nav"
-m.tableEditing = false
+
+fieldIdx := m.authRowIdx - 1
+if m.authEditing {
+switch key {
+case "enter":
+m.setAuthFieldValue(fieldIdx, m.authEditVal)
+m.authEditing = false
+case "backspace":
+if m.authCursor > 0 {
+runes := []rune(m.authEditVal)
+m.authEditVal = string(runes[:m.authCursor-1]) + string(runes[m.authCursor:])
+m.authCursor--
+}
+case "left":
+if m.authCursor > 0 {
+m.authCursor--
+}
+case "right":
+if m.authCursor < len([]rune(m.authEditVal)) {
+m.authCursor++
+}
+default:
+if isPrintable(key) {
+runes := []rune(m.authEditVal)
+r := []rune(key)[0]
+newRunes := make([]rune, len(runes)+1)
+copy(newRunes, runes[:m.authCursor])
+newRunes[m.authCursor] = r
+copy(newRunes[m.authCursor+1:], runes[m.authCursor:])
+m.authEditVal = string(newRunes)
+m.authCursor++
+}
+}
+return
+}
+
+switch key {
+case "j", "down":
+if fieldIdx < len(fields)-1 {
+m.authRowIdx++
+}
+case "k", "up":
+if fieldIdx > 0 {
+m.authRowIdx--
+} else {
+m.authRowIdx = 0
+}
+case "enter", "i":
+m.authEditVal = m.getAuthFieldValue(fieldIdx)
+m.authCursor = len([]rune(m.authEditVal))
+m.authEditing = true
+default:
+if isPrintable(key) {
+m.authEditVal = m.getAuthFieldValue(fieldIdx) + key
+m.authCursor = len([]rune(m.authEditVal))
+m.authEditing = true
+}
+}
 }
 
 func (m *EditorModel) nextTab() {
@@ -625,7 +625,7 @@ if focused {
 borderColor = theme.FocusBorder
 }
 tabs := m.renderTabs()
-content := m.renderTabContent()
+content := m.renderTabContent(focused)
 inner := lipgloss.JoinVertical(lipgloss.Left, tabs, content)
 return lipgloss.NewStyle().
 Width(m.width).
@@ -650,21 +650,21 @@ parts = append(parts, style.Render(label))
 return strings.Join(parts, " ")
 }
 
-func (m *EditorModel) renderTabContent() string {
+func (m *EditorModel) renderTabContent(focused bool) string {
 if m.request == nil {
 return lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("Select a request from the list")
 }
 switch m.activeTab {
 case TabURL:
-return m.renderURLTab()
+return m.renderURLTab(focused)
 case TabHeaders:
-return m.renderHeadersTab()
+return m.renderHeadersTab(focused)
 case TabBody:
-return m.renderBodyTab()
+return m.renderBodyTab(focused)
 case TabQuery:
-return m.renderQueryTab()
+return m.renderQueryTab(focused)
 case TabAuth:
-return m.renderAuthTab()
+return m.renderAuthTab(focused)
 }
 return ""
 }
@@ -677,241 +677,166 @@ return 30
 return w
 }
 
-func (m *EditorModel) renderCursor() string {
-runes := []rune(m.fieldValue)
-before := string(runes[:m.cursorPos])
-after := string(runes[m.cursorPos:])
-return lipgloss.NewStyle().
-Foreground(lipgloss.Color("#ffffff")).
-Background(lipgloss.Color("#1c1c2c")).
-Render(before + "█" + after)
-}
-
-func (m *EditorModel) cellVal(rowIdx, colIdx int, raw string) string {
-isRow := m.editingField != "" && rowIdx == m.tableRow
-isCol := m.tableCol == colIdx
-if isRow && m.tableEditing && isCol {
-return m.renderCursor()
-}
-if isRow && !m.tableEditing && isCol {
-return lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff")).Bold(true).Render(raw)
-}
-return raw
-}
-
-func (m *EditorModel) rowPtr(rowIdx int) string {
-if m.editingField != "" && rowIdx == m.tableRow {
-return lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff")).Render("> ")
-}
-return "  "
-}
-
-func (m *EditorModel) renderURLTab() string {
-cw := m.contentWidth()
+func (m *EditorModel) renderURLTab(focused bool) string {
 dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-lbl := lipgloss.NewStyle().Foreground(lipgloss.Color("#87d7ff"))
+hdrStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#87d7ff"))
+rowBg := lipgloss.NewStyle().Background(lipgloss.Color("#1c1c2c"))
+cw := m.contentWidth()
 
-hdr := dim.Render("  " + padRight("Field", 10) + " Value")
+hdr := hdrStyle.Render("  " + padRight("Field", 10) + " Value")
 sep := dim.Render("  " + strings.Repeat("─", cw-2))
 
-row0 := m.rowPtr(0) + lbl.Render(padRight("Method", 10)) + " " + m.cellVal(0, 1, string(m.request.Method))
-row1 := m.rowPtr(1) + lbl.Render(padRight("URL", 10)) + " " + m.cellVal(1, 1, m.request.URL)
+methodFocused := focused && m.urlRowIdx == 0
+urlFocused := focused && m.urlRowIdx == 1
 
-hint := dim.Render("  ←/→ or h/l: cycle method  enter/i: edit URL  j/k: move  [ ]: tabs")
-return strings.Join([]string{hdr, sep, row0, row1, "", hint}, "\n")
+methodLine := "  " + padRight("Method", 10) + " " + m.methodSel.renderInline(methodFocused)
+if methodFocused && !m.methodSel.isOpen() {
+methodLine = rowBg.Render("> "+padRight("Method", 10)+" ") + m.methodSel.renderInline(methodFocused)
+} else if methodFocused && m.methodSel.isOpen() {
+methodLine = "> " + padRight("Method", 10) + " " + m.methodSel.renderInline(methodFocused)
 }
 
-func (m *EditorModel) renderHeadersTab() string {
+var urlValStr string
+if m.urlEditing && urlFocused {
+urlValStr = renderEditCursor(m.urlEditVal, m.urlCursor, cw-14)
+} else {
+urlValStr = m.urlEditVal
+if urlFocused {
+urlValStr = lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff")).Render(urlValStr)
+}
+}
+
+urlLine := "  " + padRight("URL", 10) + " " + urlValStr
+if urlFocused {
+urlLine = rowBg.Render("> "+padRight("URL", 10)+" ") + urlValStr
+}
+
+hint := dim.Render("  j/k navigate  l/r cycle method  enter/i edit URL  [ ] tabs")
+return strings.Join([]string{hdr, sep, methodLine, urlLine, "", hint}, "\n")
+}
+
+func (m *EditorModel) renderHeadersTab(focused bool) string {
 dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-enOn := lipgloss.NewStyle().Foreground(lipgloss.Color("#00d700"))
 cw := m.contentWidth()
-keyW := 22
-valW := cw - 2 - 3 - keyW - 2
-if valW < 10 {
-valW = 10
+hdr := dim.Render("  " + strings.Repeat("─", cw-2))
+hint := dim.Render("  j/k rows  h/l cols  enter/i edit  space toggle  d delete  tab next col")
+content := m.headersTable.render(cw, focused)
+return strings.Join([]string{content, hdr, hint}, "\n")
 }
 
-hdr := dim.Render("  " + padRight("✓", 3) + padRight("Key", keyW+1) + "Value")
-sep := dim.Render("  " + strings.Repeat("─", cw-2))
-
-var rows []string
-for i, h := range m.request.Headers {
-en := enOn.Render("✓")
-if !h.Enabled {
-en = dim.Render("✗")
-}
-key := m.cellVal(i, 1, padRight(h.Key, keyW))
-val := m.cellVal(i, 2, truncate(h.Value, valW))
-rows = append(rows, m.rowPtr(i)+en+"  "+key+" "+val)
-}
-if len(rows) == 0 {
-rows = append(rows, dim.Render("  (no headers)"))
-}
-
-hint := dim.Render("  [n] add  [d] delete  [space] toggle  [enter/i] edit  [tab] next col")
-parts := []string{hdr, sep}
-parts = append(parts, rows...)
-parts = append(parts, "", hint)
-return strings.Join(parts, "\n")
-}
-
-func (m *EditorModel) renderQueryTab() string {
+func (m *EditorModel) renderQueryTab(focused bool) string {
 dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-enOn := lipgloss.NewStyle().Foreground(lipgloss.Color("#00d700"))
 cw := m.contentWidth()
-keyW := 22
-valW := cw - 2 - 3 - keyW - 2
-if valW < 10 {
-valW = 10
+hdr := dim.Render("  " + strings.Repeat("─", cw-2))
+hint := dim.Render("  j/k rows  h/l cols  enter/i edit  space toggle  d delete  tab next col")
+content := m.queryTable.render(cw, focused)
+return strings.Join([]string{content, hdr, hint}, "\n")
 }
 
-hdr := dim.Render("  " + padRight("✓", 3) + padRight("Key", keyW+1) + "Value")
-sep := dim.Render("  " + strings.Repeat("─", cw-2))
-
-var rows []string
-for i, p := range m.request.QueryParams {
-en := enOn.Render("✓")
-if !p.Enabled {
-en = dim.Render("✗")
-}
-key := m.cellVal(i, 1, padRight(p.Key, keyW))
-val := m.cellVal(i, 2, truncate(p.Value, valW))
-rows = append(rows, m.rowPtr(i)+en+"  "+key+" "+val)
-}
-if len(rows) == 0 {
-rows = append(rows, dim.Render("  (no query parameters)"))
-}
-
-hint := dim.Render("  [n] add  [d] delete  [space] toggle  [enter/i] edit  [tab] next col")
-parts := []string{hdr, sep}
-parts = append(parts, rows...)
-parts = append(parts, "", hint)
-return strings.Join(parts, "\n")
-}
-
-func (m *EditorModel) renderBodyTab() string {
+func (m *EditorModel) renderBodyTab(focused bool) string {
 dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-lbl := lipgloss.NewStyle().Foreground(lipgloss.Color("#87d7ff"))
-act := lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff")).Bold(true)
+rowBg := lipgloss.NewStyle().Background(lipgloss.Color("#1c1c2c"))
+cw := m.contentWidth()
 
-typeStr := lbl.Render("Type: ") + act.Render(string(m.request.Body.Type))
-typeHint := dim.Render("  [t] cycle: none → raw → json → form-data → urlencoded")
+typeFocused := focused && m.bodyRowIdx == 0
+typeLine := "  " + padRight("Type", 10) + " " + m.bodyTypeSel.renderInline(typeFocused)
+if typeFocused && !m.bodyTypeSel.isOpen() {
+typeLine = rowBg.Render("> "+padRight("Type", 10)+" ") + m.bodyTypeSel.renderInline(typeFocused)
+} else if typeFocused && m.bodyTypeSel.isOpen() {
+typeLine = "> " + padRight("Type", 10) + " " + m.bodyTypeSel.renderInline(typeFocused)
+}
 
+bt := models.BodyType(m.bodyTypeSel.value())
 var content string
-switch m.request.Body.Type {
+contentFocused := focused && m.bodyRowIdx == 1
+
+switch bt {
 case models.BodyNone:
 content = dim.Render("  (no body)")
 case models.BodyRaw, models.BodyJSON:
-if m.editingField == "body_raw" {
-content = m.renderCursor()
-content += "\n" + dim.Render("  [enter] confirm  [esc] cancel  ←/→ cursor")
+if m.bodyEditing && contentFocused {
+content = "  " + renderEditCursor(m.bodyEditVal, m.bodyCursor, cw-4)
 } else {
-body := m.request.Body.Content
+body := m.bodyEditVal
 if body == "" {
-body = dim.Render("  (empty body)  [enter/i] to edit")
+body = dim.Render("(empty — press enter to edit)")
 }
-content = body
+if contentFocused {
+content = rowBg.Render("> ") + body
+} else {
+content = "  " + body
 }
-case models.BodyURLEncoded:
-content = m.renderFormTable(false)
-case models.BodyFormData:
-content = m.renderFormTable(true)
+}
+case models.BodyFormData, models.BodyURLEncoded:
+content = m.bodyFormTable.render(cw, contentFocused)
 }
 
-return strings.Join([]string{typeStr, typeHint, "", content}, "\n")
+hint := dim.Render("  j/k navigate  l/r cycle type  enter/i edit  [ ] tabs")
+return strings.Join([]string{typeLine, "", content, "", hint}, "\n")
 }
 
-func (m *EditorModel) renderFormTable(withType bool) string {
+func (m *EditorModel) renderAuthTab(focused bool) string {
 dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-enOn := lipgloss.NewStyle().Foreground(lipgloss.Color("#00d700"))
+lbl := lipgloss.NewStyle().Foreground(lipgloss.Color("#87d7ff"))
+rowBg := lipgloss.NewStyle().Background(lipgloss.Color("#1c1c2c"))
+hdrStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#87d7ff"))
 cw := m.contentWidth()
 
-var keyW, valW, typeW int
-if withType {
-keyW = 14
-typeW = 8
-valW = cw - 2 - 3 - keyW - typeW - 4
-if valW < 10 {
-valW = 10
-}
-} else {
-keyW = 22
-valW = cw - 2 - 3 - keyW - 2
-if valW < 10 {
-valW = 10
-}
+typeFocused := focused && m.authRowIdx == 0
+typeLine := "  " + padRight("Type", 10) + " " + m.authTypeSel.renderInline(typeFocused)
+if typeFocused && !m.authTypeSel.isOpen() {
+typeLine = rowBg.Render("> "+padRight("Type", 10)+" ") + m.authTypeSel.renderInline(typeFocused)
+} else if typeFocused && m.authTypeSel.isOpen() {
+typeLine = "> " + padRight("Type", 10) + " " + m.authTypeSel.renderInline(typeFocused)
 }
 
-hdrStr := "  " + padRight("✓", 3) + padRight("Key", keyW+1) + padRight("Value", valW+1)
-if withType {
-hdrStr += "Type"
-}
-hdr := dim.Render(hdrStr)
+fields := m.authFieldNames()
 sep := dim.Render("  " + strings.Repeat("─", cw-2))
+hdr := hdrStyle.Render("  " + padRight("Field", 12) + " Value")
 
-var rows []string
-for i, f := range m.request.Body.FormData {
-en := enOn.Render("✓")
-if !f.Enabled {
-en = dim.Render("✗")
+var fieldLines []string
+for i, name := range fields {
+rowIdx := i + 1
+isFocused := focused && m.authRowIdx == rowIdx
+var valStr string
+if isFocused && m.authEditing {
+valStr = renderEditCursor(m.authEditVal, m.authCursor, cw-16)
+} else {
+val := m.getAuthFieldValue(i)
+if name == "Password" || name == "Token" {
+val = maskSecret(val)
 }
-key := m.cellVal(i, 1, padRight(f.Key, keyW))
-val := m.cellVal(i, 2, truncate(f.Value, valW))
-row := m.rowPtr(i) + en + "  " + key + " " + val
-if withType {
-tv := string(f.Type)
-if tv == "" {
-tv = "text"
+valStr = val
+if isFocused {
+valStr = lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff")).Render(valStr)
 }
-row += " " + m.cellVal(i, 3, tv)
 }
-rows = append(rows, row)
+ptr := "  "
+if isFocused {
+ptr = lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff")).Render("> ")
 }
-if len(rows) == 0 {
-rows = append(rows, dim.Render("  (no fields)"))
+line := ptr + lbl.Render(padRight(name, 12)) + " " + valStr
+if isFocused {
+line = rowBg.Render(line)
+}
+fieldLines = append(fieldLines, line)
 }
 
-hintStr := "[n] add  [d] delete  [space] toggle  [enter/i] edit  [tab] col"
-if withType {
-hintStr += "  [f] toggle text/file"
-}
-hint := dim.Render("  " + hintStr)
-
-parts := []string{hdr, sep}
-parts = append(parts, rows...)
+hint := dim.Render("  j/k navigate  enter/i edit  l/r cycle type")
+parts := []string{typeLine, hdr, sep}
+parts = append(parts, fieldLines...)
 parts = append(parts, "", hint)
 return strings.Join(parts, "\n")
 }
 
-func (m *EditorModel) renderAuthTab() string {
-dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-lbl := lipgloss.NewStyle().Foreground(lipgloss.Color("#87d7ff"))
-
-if m.editingField == "auth_token" {
-input := lbl.Render("Bearer token: ") + m.renderCursor()
-return input + "\n" + dim.Render("  [enter] confirm  [esc] cancel  ←/→ cursor")
+func maskSecret(s string) string {
+if len(s) == 0 {
+return ""
 }
-
-authLabel := lbl.Render("Type: ")
-authType := lipgloss.NewStyle().Foreground(lipgloss.Color("#e4e4e4")).Render(string(m.request.Auth.Type))
-
-details := ""
-switch m.request.Auth.Type {
-case models.AuthBasic:
-details = fmt.Sprintf("\n%s%s\n%s%s",
-lbl.Render("Username: "), m.request.Auth.Username,
-lbl.Render("Password: "), maskPassword(m.request.Auth.Password))
-case models.AuthBearer:
-details = fmt.Sprintf("\n%s%s", lbl.Render("Token: "), maskToken(m.request.Auth.Token))
-case models.AuthAPIKey:
-details = fmt.Sprintf("\n%s%s\n%s%s\n%s%s",
-lbl.Render("Key: "), m.request.Auth.Key,
-lbl.Render("Value: "), m.request.Auth.Value,
-lbl.Render("In: "), m.request.Auth.In)
+if len(s) <= 8 {
+return strings.Repeat("*", len(s))
 }
-
-hint := "\n" + dim.Render("  [i/enter] edit token")
-return authLabel + authType + details + hint
+return s[:4] + strings.Repeat("*", len(s)-8) + s[len(s)-4:]
 }
 
 func padRight(s string, width int) string {
@@ -928,18 +853,4 @@ if len(runes) <= width {
 return s
 }
 return string(runes[:width-1]) + "…"
-}
-
-func maskPassword(s string) string {
-if len(s) == 0 {
-return ""
-}
-return strings.Repeat("*", len(s))
-}
-
-func maskToken(s string) string {
-if len(s) <= 8 {
-return strings.Repeat("*", len(s))
-}
-return s[:4] + strings.Repeat("*", len(s)-8) + s[len(s)-4:]
 }
