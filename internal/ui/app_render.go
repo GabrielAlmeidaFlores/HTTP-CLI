@@ -386,10 +386,10 @@ func (a *App) renderCurlExportModal() string {
 
 func (a *App) renderNotificationModal() string {
 	icon := "✓"
-	borderColor := "#00d700"
+	borderColor := a.theme.Success
 	if a.notificationIsErr {
 		icon = "✗"
-		borderColor = "#d70000"
+		borderColor = a.theme.Error
 	}
 	content := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(borderColor)).

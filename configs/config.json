@@ -25,7 +25,7 @@
         ],
         "description": "Execute request",
         "category": "Global",
-        "visible": true
+        "visible": false
       },
       "search": {
         "keys": [
@@ -216,6 +216,14 @@
           "enter"
         ],
         "description": "Open request",
+        "category": "Requests",
+        "visible": true
+      },
+      "execute_request": {
+        "keys": [
+          "ctrl+e"
+        ],
+        "description": "Send request",
         "category": "Requests",
         "visible": true
       }
@@ -495,16 +503,16 @@
         "keys": ["ctrl+e"],
         "description": "Send request",
         "category": "Response",
-        "visible": true
+        "visible": false
       },
       "next_tab": {
-        "keys": ["tab", "l"],
+        "keys": ["l"],
         "description": "Next tab",
         "category": "Response",
         "visible": true
       },
       "prev_tab": {
-        "keys": ["shift+tab", "h"],
+        "keys": ["h"],
         "description": "Prev tab",
         "category": "Response",
         "visible": false
@@ -648,72 +656,6 @@
         ],
         "description": "Close",
         "category": "cURL Export",
-        "visible": true
-      }
-    },
-    "vim_viewer": {
-      "close": {
-        "keys": [
-          "q"
-        ],
-        "description": "Close",
-        "category": "Viewer",
-        "visible": true
-      },
-      "scroll_down": {
-        "keys": [
-          "j"
-        ],
-        "description": "Scroll down",
-        "category": "Viewer",
-        "visible": true
-      },
-      "scroll_up": {
-        "keys": [
-          "k"
-        ],
-        "description": "Scroll up",
-        "category": "Viewer",
-        "visible": true
-      },
-      "half_down": {
-        "keys": [
-          "ctrl+d"
-        ],
-        "description": "Half page down",
-        "category": "Viewer",
-        "visible": true
-      },
-      "half_up": {
-        "keys": [
-          "ctrl+u"
-        ],
-        "description": "Half page up",
-        "category": "Viewer",
-        "visible": true
-      },
-      "goto_top": {
-        "keys": [
-          "g"
-        ],
-        "description": "Go to top",
-        "category": "Viewer",
-        "visible": true
-      },
-      "goto_bottom": {
-        "keys": [
-          "G"
-        ],
-        "description": "Go to bottom",
-        "category": "Viewer",
-        "visible": true
-      },
-      "copy_body": {
-        "keys": [
-          "y"
-        ],
-        "description": "Copy body",
-        "category": "Viewer",
         "visible": true
       }
     }

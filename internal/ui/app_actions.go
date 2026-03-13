@@ -162,12 +162,18 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		switch a.focused {
 		case PanelRequestList:
 			a.requestList.moveDown()
+			if req := a.requestList.selected(); req != nil {
+				a.selectRequest(req)
+			}
 		}
 
 	case "up":
 		switch a.focused {
 		case PanelRequestList:
 			a.requestList.moveUp()
+			if req := a.requestList.selected(); req != nil {
+				a.selectRequest(req)
+			}
 		}
 
 	case "copy_body":
@@ -182,8 +188,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 
 	case "open_viewer":
 		if a.response.GetResponse() != nil {
-			a.showVimViewer = true
-			a.vimViewerOffset = 0
+			return a.openResponseInEditor()
 		}
 
 	case "save":

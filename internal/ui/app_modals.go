@@ -289,3 +289,39 @@ return StatusMsg{Text: "Could not read temp file: " + readErr.Error()}
 return externalEditorDoneMsg{content: string(data), source: source}
 })
 }
+
+func (a *App) openResponseInEditor() tea.Cmd {
+editorCmd := os.ExpandEnv(a.cfg.ExternalEditor)
+if editorCmd == "" {
+editorCmd = os.Getenv("EDITOR")
+}
+if editorCmd == "" {
+editorCmd = "vi"
+}
+
+body := a.response.FormattedBody()
+
+tmp, err := os.CreateTemp("", "http-cli-response-*.json")
+if err != nil {
+a.setStatus("Could not create temp file: " + err.Error())
+return nil
+}
+tmpPath := tmp.Name()
+_, _ = tmp.WriteString(body)
+_ = tmp.Close()
+
+parts := strings.Fields(editorCmd)
+if len(parts) == 0 {
+parts = []string{"vi"}
+}
+args := append(parts[1:], tmpPath)
+cmd := exec.Command(parts[0], args...)
+
+return tea.ExecProcess(cmd, func(err error) tea.Msg {
+defer os.Remove(tmpPath)
+if err != nil {
+return StatusMsg{Text: "Editor error: " + err.Error()}
+}
+return StatusMsg{Text: ""}
+})
+}

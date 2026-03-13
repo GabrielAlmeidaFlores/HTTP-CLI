@@ -76,10 +76,6 @@ showNotification  bool
 notificationMsg   string
 notificationIsErr bool
 
-showVimViewer   bool
-vimViewerOffset int
-vimViewerCursor int
-
 executing bool
 }
 
@@ -173,10 +169,6 @@ if a.showNotification {
 a.showNotification = false
 break
 }
-if a.showVimViewer {
-cmds = append(cmds, a.handleVimViewer(msg))
-break
-}
 cmds = append(cmds, a.handleKey(msg))
 
 case RequestsLoadedMsg:
@@ -261,10 +253,6 @@ return a.renderCurlExportModal()
 
 if a.showNotification {
 return a.renderNotificationModal()
-}
-
-if a.showVimViewer {
-return a.renderVimViewer()
 }
 
 topBar := a.renderTopBar()
