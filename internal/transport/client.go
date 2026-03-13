@@ -3,6 +3,7 @@ package transport
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -21,15 +22,34 @@ type Client struct {
 }
 
 func NewClient(timeoutSeconds int, followRedirects bool, verifySSL bool) *Client {
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: !verifySSL}, //nolint:gosec
+	}
 	client := &http.Client{
-		Timeout: time.Duration(timeoutSeconds) * time.Second,
+		Timeout:   time.Duration(timeoutSeconds) * time.Second,
+		Transport: transport,
 	}
 	if !followRedirects {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
+	} else {
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return fmt.Errorf("too many redirects")
+			}
+			if len(via) > 0 {
+				for key, vals := range via[0].Header {
+					if _, exists := req.Header[key]; !exists {
+						for _, v := range vals {
+							req.Header.Add(key, v)
+						}
+					}
+				}
+			}
+			return nil
+		}
 	}
-	_ = verifySSL
 	return &Client{httpClient: client}
 }
 
