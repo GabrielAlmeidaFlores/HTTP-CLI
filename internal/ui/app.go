@@ -132,9 +132,11 @@ switch msg := msg.(type) {
 case tea.WindowSizeMsg:
 a.width = msg.Width
 a.height = msg.Height
-a.requestList.setSize(a.listWidth(), a.mainHeight())
-a.editor.setSize(a.mainPanelWidth(), a.mainHeight()/2)
-a.response.setSize(a.mainPanelWidth(), a.mainHeight()/2)
+editorH := a.mainHeight() / 2
+responseH := a.mainHeight() - editorH
+a.requestList.setSize(a.listWidth(), a.mainHeight()+2)
+a.editor.setSize(a.mainPanelWidth(), editorH)
+a.response.setSize(a.mainPanelWidth(), responseH)
 
 case tea.KeyMsg:
 if a.showConfirm {

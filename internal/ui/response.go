@@ -127,6 +127,8 @@ inner := lipgloss.JoinVertical(lipgloss.Left, tabBar, content)
 
 return panelBorderStyle(focused, theme).
 Padding(0, 1).
+Width(m.width).
+Height(m.height).
 Render(inner)
 }
 
