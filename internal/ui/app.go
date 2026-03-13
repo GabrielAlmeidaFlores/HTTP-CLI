@@ -483,10 +483,24 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 	case "delete_request":
 		if a.selectedReq != nil {
 			req := a.selectedReq
-			a.promptConfirm("Delete request '"+req.Name+"'?", func() {
+			a.promptConfirm("Delete '"+req.Name+"'?", func() {
 				_ = a.store.DeleteRequest(context.Background(), req.ID)
+				for i, r := range a.requests {
+					if r.ID == req.ID {
+						a.requests = append(a.requests[:i], a.requests[i+1:]...)
+						break
+					}
+				}
+				a.requestList.setRequests(a.requests)
+				if a.selectedReq != nil && a.selectedReq.ID == req.ID {
+					if len(a.requests) > 0 {
+						a.selectRequest(a.requests[0])
+					} else {
+						a.selectedReq = nil
+					}
+				}
+				a.setStatus("Deleted: " + req.Name)
 			})
-			return a.loadRequests()
 		}
 
 	case "rename_request":
@@ -627,11 +641,10 @@ func (a *App) promptInput(title, defaultVal string, action func(string)) {
 
 func (a *App) handleConfirmInput(msg tea.KeyMsg) tea.Cmd {
 	switch msg.String() {
-	case "y", "enter":
+	case "enter":
 		a.showConfirm = false
 		if a.confirmAction != nil {
 			a.confirmAction()
-			return a.loadRequests()
 		}
 	case "n", "esc":
 		a.showConfirm = false
@@ -672,7 +685,7 @@ func (a *App) View() string {
 	}
 
 	if a.showConfirm {
-		return a.renderModal(a.confirmMsg + "\n\n[y] Confirm  [n/esc] Cancel")
+		return a.renderModal(a.confirmMsg + "\n\n[enter] Confirm  [n/esc] Cancel")
 	}
 
 	if a.showInput {
