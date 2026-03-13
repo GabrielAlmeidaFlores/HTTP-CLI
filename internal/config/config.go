@@ -78,6 +78,7 @@ type Config struct {
 	RequestDefaults RequestDefaults                       `json:"request_defaults"`
 	Storage         StorageConfig                         `json:"storage"`
 	Debug           DebugConfig                           `json:"debug"`
+	ExternalEditor  string                                `json:"external_editor"`
 }
 
 type Manager struct {

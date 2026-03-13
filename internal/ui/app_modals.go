@@ -2,6 +2,9 @@ package ui
 
 import (
 	"context"
+	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
@@ -98,6 +101,8 @@ func (a *App) handleCellEditModal(msg tea.KeyMsg) tea.Cmd {
 			a.cellEditVal = string(newRunes)
 			a.cellEditCursor++
 			return nil
+		case "open_external_editor":
+			return a.openExternalEditor(a.cellEditVal)
 		}
 	}
 
@@ -205,4 +210,41 @@ func (a *App) handleCurlImportModal(msg tea.KeyMsg) tea.Cmd {
 		}
 	}
 	return nil
+}
+
+func (a *App) openExternalEditor(initialContent string) tea.Cmd {
+editorCmd := a.cfg.ExternalEditor
+if editorCmd == "" {
+editorCmd = os.Getenv("EDITOR")
+}
+if editorCmd == "" {
+editorCmd = "vi"
+}
+
+editorCmd = os.ExpandEnv(editorCmd)
+
+tmp, err := os.CreateTemp("", "http-cli-*.txt")
+if err != nil {
+a.setStatus("Could not create temp file: " + err.Error())
+return nil
+}
+tmpPath := tmp.Name()
+_, _ = tmp.WriteString(initialContent)
+_ = tmp.Close()
+
+parts := strings.Fields(editorCmd)
+args := append(parts[1:], tmpPath)
+cmd := exec.Command(parts[0], args...)
+
+return tea.ExecProcess(cmd, func(err error) tea.Msg {
+defer os.Remove(tmpPath)
+if err != nil {
+return StatusMsg{Text: "Editor error: " + err.Error()}
+}
+data, readErr := os.ReadFile(tmpPath)
+if readErr != nil {
+return StatusMsg{Text: "Could not read temp file: " + readErr.Error()}
+}
+return externalEditorDoneMsg{content: string(data)}
+})
 }

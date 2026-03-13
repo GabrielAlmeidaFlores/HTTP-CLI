@@ -39,6 +39,7 @@ func (a *App) vimViewerClampOffset(lines []string) {
 
 func (a *App) handleVimViewer(msg tea.KeyMsg) tea.Cmd {
 	lines := a.vimViewerLines()
+	total := len(lines)
 	h := a.vimViewerHeight()
 	key := msg.String()
 
@@ -47,62 +48,116 @@ func (a *App) handleVimViewer(msg tea.KeyMsg) tea.Cmd {
 		a.showVimViewer = false
 
 	case "j", "down":
-		a.vimViewerOffset++
+		if a.vimViewerCursor < total-1 {
+			a.vimViewerCursor++
+		}
 
 	case "k", "up":
-		a.vimViewerOffset--
+		if a.vimViewerCursor > 0 {
+			a.vimViewerCursor--
+		}
 
 	case "ctrl+d":
-		a.vimViewerOffset += h / 2
+		a.vimViewerCursor += h / 2
+		if a.vimViewerCursor >= total {
+			a.vimViewerCursor = total - 1
+		}
 
 	case "ctrl+u":
-		a.vimViewerOffset -= h / 2
+		a.vimViewerCursor -= h / 2
+		if a.vimViewerCursor < 0 {
+			a.vimViewerCursor = 0
+		}
 
 	case "ctrl+f", " ":
-		a.vimViewerOffset += h
+		a.vimViewerCursor += h
+		if a.vimViewerCursor >= total {
+			a.vimViewerCursor = total - 1
+		}
 
 	case "ctrl+b":
-		a.vimViewerOffset -= h
+		a.vimViewerCursor -= h
+		if a.vimViewerCursor < 0 {
+			a.vimViewerCursor = 0
+		}
 
 	case "g":
-		a.vimViewerOffset = 0
+		a.vimViewerCursor = 0
 
 	case "G":
-		a.vimViewerOffset = len(lines)
+		a.vimViewerCursor = total - 1
+		if a.vimViewerCursor < 0 {
+			a.vimViewerCursor = 0
+		}
 	}
 
-	a.vimViewerClampOffset(lines)
+	a.vimViewerSyncScroll(h)
 	return nil
+}
+
+func (a *App) vimViewerSyncScroll(h int) {
+	if a.vimViewerCursor < a.vimViewerOffset {
+		a.vimViewerOffset = a.vimViewerCursor
+	}
+	if a.vimViewerCursor >= a.vimViewerOffset+h {
+		a.vimViewerOffset = a.vimViewerCursor - h + 1
+	}
+	if a.vimViewerOffset < 0 {
+		a.vimViewerOffset = 0
+	}
 }
 
 func (a *App) renderVimViewer() string {
 	lines := a.vimViewerLines()
 	h := a.vimViewerHeight()
 	w := a.width
+	total := len(lines)
 
-	a.vimViewerClampOffset(lines)
+	a.vimViewerSyncScroll(h)
 
 	start := a.vimViewerOffset
 	end := start + h
-	if end > len(lines) {
-		end = len(lines)
+	if end > total {
+		end = total
 	}
 
-	lineNumWidth := len(fmt.Sprintf("%d", len(lines)))
-	lineNumStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#4e4e4e"))
+	lineNumWidth := len(fmt.Sprintf("%d", total))
+	if lineNumWidth < 1 {
+		lineNumWidth = 1
+	}
 	contentWidth := w - lineNumWidth - 2
 	if contentWidth < 1 {
 		contentWidth = 1
 	}
 
+	lineNumStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#4e4e4e"))
+	lineNumCursorStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#87d7ff")).
+		Bold(true)
+	cursorLineStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color("#1c2a3a")).
+		Width(w)
+
 	var sb strings.Builder
 	for i := start; i < end; i++ {
-		lineNum := lineNumStyle.Render(fmt.Sprintf("%*d", lineNumWidth, i+1))
+		isCursor := i == a.vimViewerCursor
+
+		numStyle := lineNumStyle
+		if isCursor {
+			numStyle = lineNumCursorStyle
+		}
+		lineNum := numStyle.Render(fmt.Sprintf("%*d", lineNumWidth, i+1))
+
 		content := lines[i]
 		if len([]rune(content)) > contentWidth {
 			content = string([]rune(content)[:contentWidth])
 		}
-		sb.WriteString(lineNum + " " + content + "\n")
+
+		row := lineNum + " " + content
+		if isCursor {
+			row = cursorLineStyle.Render(row)
+		}
+		sb.WriteString(row + "\n")
 	}
 
 	for i := end - start; i < h; i++ {
@@ -111,9 +166,8 @@ func (a *App) renderVimViewer() string {
 	}
 
 	pct := 0
-	total := len(lines)
 	if total > 0 {
-		pct = ((start + h) * 100) / total
+		pct = ((a.vimViewerCursor + 1) * 100) / total
 		if pct > 100 {
 			pct = 100
 		}
@@ -141,11 +195,11 @@ func (a *App) renderVimViewer() string {
 
 	pos := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#626262")).
-		Render(fmt.Sprintf(" %d/%d  %d%% ", start+1, total, pct))
+		Render(fmt.Sprintf(" %d/%d  %d%% ", a.vimViewerCursor+1, total, pct))
 
 	hints := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#4e4e4e")).
-		Render("  j↓  k↑  ctrl+d ½↓  ctrl+u ½↑  g top  G bottom  q close")
+		Render("  j↓  k↑  ctrl+d ½↓  ctrl+u ½↑  g top  G bottom  y copy  q close")
 
 	statusLine := lipgloss.NewStyle().
 		Width(w).

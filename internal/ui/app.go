@@ -79,6 +79,7 @@ notificationIsErr bool
 
 showVimViewer   bool
 vimViewerOffset int
+vimViewerCursor int
 
 executing bool
 err       error
@@ -88,6 +89,7 @@ type RequestsLoadedMsg struct{ Requests []*models.Request }
 type ResponseReceivedMsg struct{ Response *models.Response }
 type ErrorMsg struct{ Err error }
 type StatusMsg struct{ Text string }
+type externalEditorDoneMsg struct{ content string }
 
 func NewApp(cfg *config.Config, store RequestStore, httpClient HTTPExecutor, parseCurl func(string) (*models.Request, error)) *App {
 km := keybindings.NewManager(cfg)
@@ -186,7 +188,17 @@ a.err = msg.Err
 a.setStatus("Error: " + msg.Err.Error())
 
 case StatusMsg:
-a.setStatus(msg.Text)
+	a.setStatus(msg.Text)
+
+case externalEditorDoneMsg:
+	if a.cellEditCommit != nil {
+		a.cellEditCommit(msg.content)
+		a.showCellEdit = false
+		if a.selectedReq != nil {
+			_ = a.store.SaveRequest(context.Background(), a.selectedReq)
+			a.setStatus("Saved")
+		}
+	}
 }
 
 return a, tea.Batch(cmds...)
