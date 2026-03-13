@@ -30,10 +30,11 @@ activeTab  responseTab
 scrollY    int
 width      int
 height     int
+theme      config.ThemeConfig
 }
 
-func newResponseModel(km *keybindings.Manager) ResponseModel {
-return ResponseModel{keybindMgr: km}
+func newResponseModel(km *keybindings.Manager, theme config.ThemeConfig) ResponseModel {
+return ResponseModel{keybindMgr: km, theme: theme}
 }
 
 func (m *ResponseModel) setResponse(resp *models.Response) {
@@ -135,9 +136,7 @@ Bold(true).
 Underline(true).
 Foreground(lipgloss.Color(theme.Primary)).
 Padding(0, 1)
-inactive := lipgloss.NewStyle().
-Foreground(lipgloss.Color("#626262")).
-Padding(0, 1)
+inactive := dimStyle(m.theme).Padding(0, 1)
 
 var parts []string
 for i, name := range responseTabs {
@@ -149,7 +148,7 @@ parts = append(parts, inactive.Render(label))
 }
 }
 bar := strings.Join(parts, " ")
-underline := lipgloss.NewStyle().Foreground(lipgloss.Color("#333333")).
+underline := lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.SeparatorFg)).
 Render(strings.Repeat("─", m.contentWidth()))
 return lipgloss.JoinVertical(lipgloss.Left, bar, underline)
 }
@@ -170,20 +169,25 @@ cw := m.contentWidth()
 ch := m.contentHeight()
 
 if m.response == nil {
-return lipgloss.NewStyle().
-Foreground(lipgloss.Color("240")).
-Render("No response yet\n\nPress ctrl+e to execute the request")
+execKey := "ctrl+e"
+for _, h := range m.keybindMgr.GetHints("response", "") {
+if h.Action == "execute" && len(h.Keys) > 0 {
+execKey = h.Keys[0]
+break
+}
+}
+return dimStyle(m.theme).Render("No response yet\n\nPress " + execKey + " to execute the request")
 }
 if m.response.Error != "" {
-return errorStyle().Render("Error: " + m.response.Error)
+return errorStyle(m.theme).Render("Error: " + m.response.Error)
 }
 
 statusStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(m.StatusColor(theme)))
 statusLine := statusStyle.Render(fmt.Sprintf("%d %s", m.response.Status, m.response.StatusText))
-meta := dimStyle().Render(fmt.Sprintf("  %dms  %s", m.response.Duration.Milliseconds(), formatSize(m.response.Size)))
-hint := lipgloss.NewStyle().Foreground(lipgloss.Color("#4e4e4e")).Render("  j/k scroll  g/G top/bot  ctrl+d/u half  tab next tab  v viewer")
+meta := dimStyle(m.theme).Render(fmt.Sprintf("  %dms  %s", m.response.Duration.Milliseconds(), formatSize(m.response.Size)))
+hint := buildHintsLine(m.keybindMgr, "response", "", m.theme)
 
-sep := lipgloss.NewStyle().Foreground(lipgloss.Color("#333333")).Render(strings.Repeat("─", cw))
+sep := lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.SeparatorFg)).Render(strings.Repeat("─", cw))
 
 body := m.FormattedBody()
 lines := strings.Split(body, "\n")
@@ -214,7 +218,7 @@ display = append(display, l)
 
 scrollHint := ""
 if total > available {
-scrollHint = dimStyle().Render(fmt.Sprintf("  ↑↓ scroll  %d/%d lines", start+1, total))
+scrollHint = dimStyle(m.theme).Render(fmt.Sprintf("  ↑↓ scroll  %d/%d lines", start+1, total))
 }
 
 parts := []string{statusLine + meta, sep, strings.Join(display, "\n")}
@@ -230,7 +234,7 @@ cw := m.contentWidth()
 ch := m.contentHeight()
 
 if m.response == nil || len(m.response.Headers) == 0 {
-return dimStyle().Render("No headers")
+return dimStyle(m.theme).Render("No headers")
 }
 
 keys := make([]string, 0, len(m.response.Headers))
@@ -239,9 +243,9 @@ keys = append(keys, k)
 }
 sort.Strings(keys)
 
-keyStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#87d7ff"))
-valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#d7d7d7"))
-dim := dimStyle()
+keyStyle := secondaryStyle(m.theme).Bold(true)
+valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.ValueFg))
+dim := dimStyle(m.theme)
 
 keyW := 30
 valW := cw - keyW - 3
@@ -287,12 +291,12 @@ return strings.Join(parts, "\n")
 
 func (m *ResponseModel) renderInfoTab(theme config.ThemeConfig) string {
 if m.response == nil {
-return dimStyle().Render("No response yet")
+return dimStyle(m.theme).Render("No response yet")
 }
 
-labelStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#87d7ff")).Width(22)
-valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#d7d7d7"))
-sep := dimStyle().Render(strings.Repeat("─", m.contentWidth()))
+labelStyle := secondaryStyle(m.theme).Bold(true).Width(22)
+valStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.ValueFg))
+sep := dimStyle(m.theme).Render(strings.Repeat("─", m.contentWidth()))
 sectionStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(theme.Primary))
 
 statusColor := m.StatusColor(theme)
@@ -308,26 +312,26 @@ ms := timing.Milliseconds()
 var timingStr string
 switch {
 case ms < 200:
-timingStr = lipgloss.NewStyle().Foreground(lipgloss.Color("#00af00")).Render(fmt.Sprintf("%dms (fast)", ms))
+timingStr = lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Success)).Render(fmt.Sprintf("%dms (fast)", ms))
 case ms < 1000:
-timingStr = lipgloss.NewStyle().Foreground(lipgloss.Color("#d7af00")).Render(fmt.Sprintf("%dms (moderate)", ms))
+timingStr = lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Warning)).Render(fmt.Sprintf("%dms (moderate)", ms))
 default:
-timingStr = lipgloss.NewStyle().Foreground(lipgloss.Color("#d75f00")).Render(fmt.Sprintf("%dms (slow)", ms))
+timingStr = lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.ModeEditingBg)).Render(fmt.Sprintf("%dms (slow)", ms))
 }
 
 serverIP := m.response.RemoteAddr
 if serverIP == "" {
-serverIP = dimStyle().Render("(not available)")
+serverIP = dimStyle(m.theme).Render("(not available)")
 }
 
 proto := m.response.Protocol
 if proto == "" {
-proto = dimStyle().Render("(unknown)")
+proto = dimStyle(m.theme).Render("(unknown)")
 }
 
 ct := m.response.ContentType()
 if ct == "" {
-ct = dimStyle().Render("(not set)")
+ct = dimStyle(m.theme).Render("(not set)")
 }
 
 encoding := ""
@@ -337,7 +341,7 @@ encoding = enc
 encoding = enc
 }
 if encoding == "" {
-encoding = dimStyle().Render("(none)")
+encoding = dimStyle(m.theme).Render("(none)")
 }
 
 timestamp := m.response.Timestamp.Format("2006-01-02 15:04:05")

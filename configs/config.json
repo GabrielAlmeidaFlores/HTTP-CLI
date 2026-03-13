@@ -520,6 +520,48 @@
         "description": "Scroll up",
         "category": "Response",
         "visible": false
+      },
+      "scroll_top": {
+        "keys": ["g"],
+        "description": "Top",
+        "category": "Response",
+        "visible": false
+      },
+      "scroll_bottom": {
+        "keys": ["G"],
+        "description": "Bottom",
+        "category": "Response",
+        "visible": false
+      },
+      "half_page_down": {
+        "keys": ["ctrl+d"],
+        "description": "Half page down",
+        "category": "Response",
+        "visible": false
+      },
+      "half_page_up": {
+        "keys": ["ctrl+u"],
+        "description": "Half page up",
+        "category": "Response",
+        "visible": false
+      },
+      "tab_1": {
+        "keys": ["1"],
+        "description": "Body tab",
+        "category": "Response",
+        "visible": false
+      },
+      "tab_2": {
+        "keys": ["2"],
+        "description": "Headers tab",
+        "category": "Response",
+        "visible": false
+      },
+      "tab_3": {
+        "keys": ["3"],
+        "description": "Info tab",
+        "category": "Response",
+        "visible": false
       }
     },
     "cell_edit_modal": {
@@ -590,6 +632,90 @@
         "category": "cURL Import",
         "visible": true
       }
+    },
+    "curl_export_modal": {
+      "copy_clipboard": {
+        "keys": [
+          "y"
+        ],
+        "description": "Copy to clipboard",
+        "category": "cURL Export",
+        "visible": true
+      },
+      "close": {
+        "keys": [
+          "esc"
+        ],
+        "description": "Close",
+        "category": "cURL Export",
+        "visible": true
+      }
+    },
+    "vim_viewer": {
+      "close": {
+        "keys": [
+          "q"
+        ],
+        "description": "Close",
+        "category": "Viewer",
+        "visible": true
+      },
+      "scroll_down": {
+        "keys": [
+          "j"
+        ],
+        "description": "Scroll down",
+        "category": "Viewer",
+        "visible": true
+      },
+      "scroll_up": {
+        "keys": [
+          "k"
+        ],
+        "description": "Scroll up",
+        "category": "Viewer",
+        "visible": true
+      },
+      "half_down": {
+        "keys": [
+          "ctrl+d"
+        ],
+        "description": "Half page down",
+        "category": "Viewer",
+        "visible": true
+      },
+      "half_up": {
+        "keys": [
+          "ctrl+u"
+        ],
+        "description": "Half page up",
+        "category": "Viewer",
+        "visible": true
+      },
+      "goto_top": {
+        "keys": [
+          "g"
+        ],
+        "description": "Go to top",
+        "category": "Viewer",
+        "visible": true
+      },
+      "goto_bottom": {
+        "keys": [
+          "G"
+        ],
+        "description": "Go to bottom",
+        "category": "Viewer",
+        "visible": true
+      },
+      "copy_body": {
+        "keys": [
+          "y"
+        ],
+        "description": "Copy body",
+        "category": "Viewer",
+        "visible": true
+      }
     }
   },
   "ui": {
@@ -611,16 +737,32 @@
     "theme": {
       "primary": "#00d7ff",
       "secondary": "#87d7ff",
+      "dim": "#626262",
       "success": "#00d700",
       "error": "#d70000",
-      "warning": "#d7d700",
+      "warning": "#d7af00",
       "focus_border": "#00d7ff",
       "blur_border": "#626262",
+      "text_fg": "#ffffff",
+      "value_fg": "#d7d7d7",
+      "line_num_fg": "#4e4e4e",
+      "separator_fg": "#333333",
+      "black": "#000000",
+      "input_bg": "#1c1c2c",
+      "selection_bg": "#005f87",
+      "list_select_bg": "#303030",
+      "app_bg": "#1c1c1c",
+      "status_bg": "#121212",
+      "vim_cursor_bg": "#1c2a3a",
+      "vim_status_bg": "#1a1a1a",
+      "mode_bg": "#005fd7",
+      "mode_editing_bg": "#d75f00",
       "method_get": "#00d700",
       "method_post": "#d7d700",
       "method_put": "#d75f00",
       "method_delete": "#d70000",
-      "method_patch": "#00d7af"
+      "method_patch": "#00d7af",
+      "method_default": "#ffffff"
     }
   },
   "request_defaults": {

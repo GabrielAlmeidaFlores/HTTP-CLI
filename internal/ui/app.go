@@ -14,13 +14,6 @@ tea "github.com/charmbracelet/bubbletea"
 "github.com/user/http-cli/internal/ui/keybindings"
 )
 
-type AppMode string
-
-const (
-ModeNormal AppMode = "normal"
-ModeSearch AppMode = "search"
-)
-
 type FocusedPanel string
 
 const (
@@ -35,8 +28,8 @@ keybindMgr *keybindings.Manager
 store      RequestStore
 httpClient HTTPExecutor
 parseCurl  func(string) (*models.Request, error)
+theme      config.ThemeConfig
 
-mode    AppMode
 focused FocusedPanel
 width   int
 height  int
@@ -88,7 +81,6 @@ vimViewerOffset int
 vimViewerCursor int
 
 executing bool
-err       error
 }
 
 type RequestsLoadedMsg struct{ Requests []*models.Request }
@@ -102,6 +94,7 @@ source  string
 
 func NewApp(cfg *config.Config, store RequestStore, httpClient HTTPExecutor, parseCurl func(string) (*models.Request, error)) *App {
 km := keybindings.NewManager(cfg)
+theme := cfg.UI.Theme
 
 app := &App{
 cfg:        cfg,
@@ -109,14 +102,14 @@ keybindMgr: km,
 store:      store,
 httpClient: httpClient,
 parseCurl:  parseCurl,
-mode:       ModeNormal,
+theme:      theme,
 focused:    PanelRequestList,
 requests:   make([]*models.Request, 0),
 }
 
 app.requestList = newRequestListModel(km)
-app.editor = newEditorModel(km)
-app.response = newResponseModel(km)
+app.editor = newEditorModel(km, theme)
+app.response = newResponseModel(km, theme)
 
 return app
 }
@@ -205,7 +198,6 @@ formatSize(msg.Response.Size)))
 
 case ErrorMsg:
 a.executing = false
-a.err = msg.Err
 a.setStatus("Error: " + msg.Err.Error())
 
 case StatusMsg:

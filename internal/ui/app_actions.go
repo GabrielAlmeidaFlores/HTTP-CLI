@@ -158,8 +158,6 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			a.focused = PanelEditor
 		}
 
-	case "insert_mode":
-
 	case "down":
 		switch a.focused {
 		case PanelRequestList:

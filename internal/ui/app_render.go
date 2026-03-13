@@ -29,8 +29,8 @@ func (a *App) renderTopBar() string {
 	sendStyle := lipgloss.NewStyle().
 		Bold(true).
 		Padding(0, 2).
-		Background(lipgloss.Color("#00d700")).
-		Foreground(lipgloss.Color("#000000"))
+		Background(lipgloss.Color(a.theme.Success)).
+		Foreground(lipgloss.Color(a.theme.Black))
 
 	executing := ""
 	if a.executing {
@@ -58,7 +58,7 @@ func (a *App) renderTopBar() string {
 		Width(a.width).
 		BorderBottom(true).
 		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#626262")).
+		BorderForeground(lipgloss.Color(a.cfg.UI.Theme.BlurBorder)).
 		Render(bar)
 }
 
@@ -87,11 +87,11 @@ func (a *App) renderStatusBar() string {
 	modeStyle := lipgloss.NewStyle().
 		Bold(true).
 		Padding(0, 1).
-		Background(lipgloss.Color("#005fd7")).
-		Foreground(lipgloss.Color("#ffffff"))
+		Background(lipgloss.Color(a.theme.ModeBg)).
+		Foreground(lipgloss.Color(a.theme.TextFg))
 
 	if mode == "EDITING" {
-		modeStyle = modeStyle.Background(lipgloss.Color("#d75f00"))
+		modeStyle = modeStyle.Background(lipgloss.Color(a.theme.ModeEditingBg))
 	}
 
 	status := ""
@@ -104,7 +104,7 @@ func (a *App) renderStatusBar() string {
 	panel := string(a.focused)
 	panelStyle := lipgloss.NewStyle().
 		Padding(0, 1).
-		Foreground(lipgloss.Color("#87d7ff"))
+		Foreground(lipgloss.Color(a.cfg.UI.Theme.Secondary))
 
 	bar := lipgloss.JoinHorizontal(lipgloss.Top,
 		modeStyle.Render(mode),
@@ -114,7 +114,7 @@ func (a *App) renderStatusBar() string {
 
 	return lipgloss.NewStyle().
 		Width(a.width).
-		Background(lipgloss.Color("#1c1c1c")).
+		Background(lipgloss.Color(a.theme.AppBg)).
 		Render(bar)
 }
 
@@ -180,8 +180,8 @@ func (a *App) renderHints() string {
 		Width(a.width).
 		Height(a.cfg.UI.Hints.Height).
 		Padding(0, 1).
-		Background(lipgloss.Color("#121212")).
-		Foreground(lipgloss.Color("#626262")).
+		Background(lipgloss.Color(a.theme.StatusBg)).
+		Foreground(lipgloss.Color(a.theme.Dim)).
 		Render(hintsText)
 }
 
@@ -194,7 +194,7 @@ func (a *App) renderBackground() string {
 }
 
 func (a *App) renderModal(content string) string {
-	modal := modalBorderStyle("#00d7ff").
+	modal := modalBorderStyle(a.theme.Primary).
 		Padding(1, 3).
 		Render(content)
 
@@ -203,7 +203,7 @@ func (a *App) renderModal(content string) string {
 }
 
 func (a *App) renderModalOverlay(content string, w int) string {
-	modal := modalBorderStyle("#00d7ff").Padding(1, 2).Width(w).Render(content)
+	modal := modalBorderStyle(a.theme.Primary).Padding(1, 2).Width(w).Render(content)
 	return overlayCenter(a.renderBackground(), modal, a.width, a.height)
 }
 
@@ -211,7 +211,7 @@ func (a *App) renderCellEditModal() string {
 	modalW := modalWidth(a.width)
 	contentW := modalW - 6
 
-	titleStyle := accentStyle().Bold(true)
+	titleStyle := accentStyle(a.theme).Bold(true)
 
 	runes := []rune(a.cellEditVal)
 	cursor := a.cellEditCursor
@@ -226,11 +226,11 @@ func (a *App) renderCellEditModal() string {
 		Width(contentW).
 		Height(8).
 		Padding(1, 1).
-		Background(lipgloss.Color("#1c1c2c")).
-		Foreground(lipgloss.Color("#ffffff"))
+		Background(lipgloss.Color(a.theme.InputBg)).
+		Foreground(lipgloss.Color(a.theme.TextFg))
 
-	dimKey := accentStyle().Bold(true)
-	dimDesc := dimStyle()
+	dimKey := accentStyle(a.theme).Bold(true)
+	dimDesc := dimStyle(a.theme)
 
 	hintsRow := a.buildModalHints("cell_edit_modal", dimKey, dimDesc)
 
@@ -258,8 +258,8 @@ func (a *App) renderCurlImportModal() string {
 	contentW := modalW - 6
 	lineW := contentW - 2
 
-	titleStyle := accentStyle().Bold(true)
-	dim := dimStyle()
+	titleStyle := accentStyle(a.theme).Bold(true)
+	dim := dimStyle(a.theme)
 
 	runes := []rune(a.curlImportVal)
 	cursor := a.curlImportCursor
@@ -274,8 +274,8 @@ func (a *App) renderCurlImportModal() string {
 		Width(contentW).
 		Height(visibleLines).
 		Padding(0, 1).
-		Background(lipgloss.Color("#1c1c2c")).
-		Foreground(lipgloss.Color("#ffffff"))
+		Background(lipgloss.Color(a.theme.InputBg)).
+		Foreground(lipgloss.Color(a.theme.TextFg))
 
 	var renderedLines []string
 	start := a.curlImportScroll
@@ -306,8 +306,8 @@ func (a *App) renderCurlImportModal() string {
 		scrollInfo = dim.Render(fmt.Sprintf(" (%d/%d lines)", cursorLine+1, totalLines))
 	}
 
-	dimKey := accentStyle().Bold(true)
-	descStyle := dimStyle()
+	dimKey := accentStyle(a.theme).Bold(true)
+	descStyle := dimStyle(a.theme)
 	hintsRow := a.buildModalHints("curl_import_modal", dimKey, descStyle)
 
 	example := dim.Render("e.g. curl -X POST https://api.example.com -H 'Content-Type: application/json' -d '{}'")
@@ -339,9 +339,8 @@ func (a *App) renderCurlExportModal() string {
 	contentW := modalW - 6
 	lineW := contentW - 2
 
-	titleStyle := accentStyle().Bold(true)
-	dim := dimStyle()
-	dimKey := accentStyle().Bold(true)
+	titleStyle := accentStyle(a.theme).Bold(true)
+	dim := dimStyle(a.theme)
 
 	runes := []rune(a.curlExportVal)
 	wrapped := wrapRunesIntoLines(runes, lineW)
@@ -357,8 +356,8 @@ func (a *App) renderCurlExportModal() string {
 		Width(contentW).
 		Height(visibleLines).
 		Padding(0, 1).
-		Background(lipgloss.Color("#1c1c2c")).
-		Foreground(lipgloss.Color("#d7d7d7"))
+		Background(lipgloss.Color(a.theme.InputBg)).
+		Foreground(lipgloss.Color(a.theme.ValueFg))
 
 	var lines []string
 	for i := start; i < end; i++ {
@@ -371,7 +370,7 @@ func (a *App) renderCurlExportModal() string {
 		scrollInfo = dim.Render(fmt.Sprintf("  (%d lines total)", totalLines))
 	}
 
-	hints := dimKey.Render("y") + dim.Render(" copy to clipboard") + "  " + dimKey.Render("esc") + dim.Render(" close")
+	hints := a.buildModalHints("curl_export_modal", accentStyle(a.theme).Bold(true), dimStyle(a.theme))
 
 	body := lipgloss.JoinVertical(lipgloss.Left,
 		titleStyle.Render("Export as cURL"),
@@ -396,7 +395,7 @@ func (a *App) renderNotificationModal() string {
 		Foreground(lipgloss.Color(borderColor)).
 		Bold(true).
 		Render(icon+" "+a.notificationMsg) + "\n\n" +
-		dimStyle().Render("Press any key to continue")
+		dimStyle(a.theme).Render("Press any key to continue")
 
 	modal := modalBorderStyle(borderColor).
 		Padding(1, 3).

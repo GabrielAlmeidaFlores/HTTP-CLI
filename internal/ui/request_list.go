@@ -152,7 +152,7 @@ func (m *RequestListModel) renderLine(req *models.Request, selected bool, theme 
 
 	if selected {
 		return lipgloss.NewStyle().
-			Background(lipgloss.Color("#303030")).
+			Background(lipgloss.Color(theme.ListSelectBg)).
 			Render("> " + line)
 	}
 	return "  " + line

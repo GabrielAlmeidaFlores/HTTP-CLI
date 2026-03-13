@@ -6,6 +6,7 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/user/http-cli/internal/config"
 	"github.com/user/http-cli/internal/models"
 	"github.com/user/http-cli/internal/ui/keybindings"
 )
@@ -28,10 +29,11 @@ type kvTable struct {
 	editCursor   int
 	showFileType bool
 	km           *keybindings.Manager
+	theme        config.ThemeConfig
 }
 
-func newKvTable(rows []kvRow, km *keybindings.Manager) kvTable {
-	t := kvTable{colIdx: 1, km: km}
+func newKvTable(rows []kvRow, km *keybindings.Manager, theme config.ThemeConfig) kvTable {
+	t := kvTable{colIdx: 1, km: km, theme: theme}
 	if len(rows) > 0 {
 		t.rows = make([]kvRow, len(rows))
 		copy(t.rows, rows)
@@ -270,16 +272,16 @@ func (t *kvTable) render(width int, insertMode bool) string {
 }
 
 func (t *kvTable) renderWithMaxRows(width int, insertMode bool, maxRows int) string {
-	dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-	hdrStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#87d7ff"))
-	enOn := lipgloss.NewStyle().Foreground(lipgloss.Color("#00af00"))
-	enOff := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-	fileTag := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#d7af00"))
-	textTag := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-	rowBg := lipgloss.NewStyle().Background(lipgloss.Color("#1c1c2c"))
-	cellBg := lipgloss.NewStyle().Background(lipgloss.Color("#005f87")).Bold(true)
-	placeholder := lipgloss.NewStyle().Foreground(lipgloss.Color("#444444"))
-	ptrStyle := accentStyle()
+	dim := dimStyle(t.theme)
+	hdrStyle := secondaryStyle(t.theme).Bold(true)
+	enOn := lipgloss.NewStyle().Foreground(lipgloss.Color(t.theme.Success))
+	enOff := dimStyle(t.theme)
+	fileTag := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(t.theme.Warning))
+	textTag := dimStyle(t.theme)
+	rowBg := lipgloss.NewStyle().Background(lipgloss.Color(t.theme.InputBg))
+	cellBg := lipgloss.NewStyle().Background(lipgloss.Color(t.theme.SelectionBg)).Bold(true)
+	placeholder := lipgloss.NewStyle().Foreground(lipgloss.Color(t.theme.Dim))
+	ptrStyle := accentStyle(t.theme)
 
 	typeColW := 0
 	if t.showFileType {
@@ -342,9 +344,9 @@ func (t *kvTable) renderWithMaxRows(width int, insertMode bool, maxRows int) str
 
 		if isCurrentRow && t.editing {
 			if t.colIdx == 1 {
-				keyDisplay = renderEditCursor(t.editVal, t.editCursor, keyW)
+				keyDisplay = renderEditCursor(t.editVal, t.editCursor, keyW, t.theme)
 			} else if t.colIdx == 2 {
-				valDisplay = renderEditCursor(t.editVal, t.editCursor, valW)
+				valDisplay = renderEditCursor(t.editVal, t.editCursor, valW, t.theme)
 			}
 		}
 
@@ -415,7 +417,7 @@ func (t *kvTable) renderWithMaxRows(width int, insertMode bool, maxRows int) str
 	return strings.Join(parts, "\n")
 }
 
-func renderEditCursor(val string, cursor int, maxWidth int) string {
+func renderEditCursor(val string, cursor int, maxWidth int, theme config.ThemeConfig) string {
 	runes := []rune(val)
 	n := len(runes)
 
@@ -460,8 +462,8 @@ func renderEditCursor(val string, cursor int, maxWidth int) string {
 	result := padRight(beforeStr+"█"+afterStr, maxWidth)
 
 	return lipgloss.NewStyle().
-		Background(lipgloss.Color("#005f87")).
-		Foreground(lipgloss.Color("#ffffff")).
+		Background(lipgloss.Color(theme.SelectionBg)).
+		Foreground(lipgloss.Color(theme.TextFg)).
 		Bold(true).
 		Render(result)
 }

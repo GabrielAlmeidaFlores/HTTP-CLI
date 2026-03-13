@@ -4,16 +4,19 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/user/http-cli/internal/config"
 )
 
 type selectBox struct {
 	options []string
 	current int
 	open    bool
+	theme   config.ThemeConfig
 }
 
-func newSelectBox(options []string, initial string) selectBox {
-	sb := selectBox{options: options}
+func newSelectBox(options []string, initial string, theme config.ThemeConfig) selectBox {
+	sb := selectBox{options: options, theme: theme}
 	for i, o := range options {
 		if o == initial {
 			sb.current = i
@@ -99,19 +102,19 @@ func (s *selectBox) renderInline(focused bool) string {
 	if !s.open {
 		return lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#00d7ff")).
+			Foreground(lipgloss.Color(s.theme.Primary)).
 			Render("[" + val + " ▾]")
 	}
 	header := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("#00d7ff")).
+		Foreground(lipgloss.Color(s.theme.Primary)).
 		Render("[" + val + " ▾]")
 	var items []string
 	for i, opt := range s.options {
 		if i == s.current {
 			items = append(items, lipgloss.NewStyle().
-				Background(lipgloss.Color("#00d7ff")).
-				Foreground(lipgloss.Color("#000000")).
+				Background(lipgloss.Color(s.theme.Primary)).
+				Foreground(lipgloss.Color(s.theme.Black)).
 				Render("▶ "+opt+" "))
 		} else {
 			items = append(items, "  "+opt+" ")
@@ -119,7 +122,7 @@ func (s *selectBox) renderInline(focused bool) string {
 	}
 	dropdown := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#00d7ff")).
+		BorderForeground(lipgloss.Color(s.theme.Primary)).
 		Render(strings.Join(items, "\n"))
 	return header + "\n" + dropdown
 }

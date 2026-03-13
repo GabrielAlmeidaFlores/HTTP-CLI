@@ -130,12 +130,10 @@ func (a *App) renderVimViewer() string {
 		contentWidth = 1
 	}
 
-	lineNumStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#4e4e4e"))
-	lineNumCursorStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#87d7ff")).
-		Bold(true)
+	lineNumStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(a.theme.LineNumFg))
+	lineNumCursorStyle := secondaryStyle(a.theme).Bold(true)
 	cursorLineStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#1c2a3a")).
+		Background(lipgloss.Color(a.theme.VimCursorBg)).
 		Width(w)
 
 	var sb strings.Builder
@@ -161,7 +159,7 @@ func (a *App) renderVimViewer() string {
 	}
 
 	for i := end - start; i < h; i++ {
-		tilde := lipgloss.NewStyle().Foreground(lipgloss.Color("#4e4e4e")).Render("~")
+		tilde := lipgloss.NewStyle().Foreground(lipgloss.Color(a.theme.LineNumFg)).Render("~")
 		sb.WriteString(tilde + "\n")
 	}
 
@@ -174,8 +172,8 @@ func (a *App) renderVimViewer() string {
 	}
 
 	statusLeft := lipgloss.NewStyle().
-		Background(lipgloss.Color("#00d7ff")).
-		Foreground(lipgloss.Color("#000000")).
+		Background(lipgloss.Color(a.theme.Primary)).
+		Foreground(lipgloss.Color(a.theme.Black)).
 		Bold(true).
 		Render(" NORMAL ")
 
@@ -187,17 +185,14 @@ func (a *App) renderVimViewer() string {
 			Render(fmt.Sprintf(" %d ", a.response.GetResponse().Status))
 	}
 
-	pos := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#626262")).
+	pos := dimStyle(a.theme).
 		Render(fmt.Sprintf(" %d/%d  %d%% ", a.vimViewerCursor+1, total, pct))
 
-	hints := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#4e4e4e")).
-		Render("  j↓  k↑  ctrl+d ½↓  ctrl+u ½↑  g top  G bottom  y copy  q close")
+	hints := buildHintsLine(a.keybindMgr, "vim_viewer", "", a.theme)
 
 	statusLine := lipgloss.NewStyle().
 		Width(w).
-		Background(lipgloss.Color("#1a1a1a")).
+		Background(lipgloss.Color(a.theme.VimStatusBg)).
 		Render(statusLeft + info + hints + pos)
 
 	return sb.String() + statusLine

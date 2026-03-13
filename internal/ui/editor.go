@@ -31,6 +31,7 @@ request    *models.Request
 activeTab  EditorTab
 width      int
 height     int
+theme      config.ThemeConfig
 
 urlRowIdx  int
 methodSel  selectBox
@@ -56,17 +57,18 @@ authEditVal string
 authCursor  int
 }
 
-func newEditorModel(km *keybindings.Manager) EditorModel {
-ft := newKvTable(nil, km)
+func newEditorModel(km *keybindings.Manager, theme config.ThemeConfig) EditorModel {
+ft := newKvTable(nil, km, theme)
 ft.showFileType = true
 return EditorModel{
 keybindMgr:    km,
 activeTab:     TabURL,
-methodSel:     newSelectBox(methodOptions(), "GET"),
-bodyTypeSel:   newSelectBox(bodyTypeOptions(), "none"),
-authTypeSel:   newSelectBox(authTypeOptions(), "none"),
-headersTable:  newKvTable(nil, km),
-queryTable:    newKvTable(nil, km),
+theme:         theme,
+methodSel:     newSelectBox(methodOptions(), "GET", theme),
+bodyTypeSel:   newSelectBox(bodyTypeOptions(), "none", theme),
+authTypeSel:   newSelectBox(authTypeOptions(), "none", theme),
+headersTable:  newKvTable(nil, km, theme),
+queryTable:    newKvTable(nil, km, theme),
 bodyFormTable: ft,
 }
 }
@@ -96,7 +98,7 @@ func (m *EditorModel) syncFromRequest() {
 if m.request == nil {
 return
 }
-m.methodSel = newSelectBox(methodOptions(), string(m.request.Method))
+m.methodSel = newSelectBox(methodOptions(), string(m.request.Method), m.theme)
 m.urlEditing = false
 m.urlEditVal = m.request.URL
 m.urlCursor = len([]rune(m.urlEditVal))
@@ -106,9 +108,9 @@ hRows := make([]kvRow, len(m.request.Headers))
 for i, h := range m.request.Headers {
 hRows[i] = kvRow{enabled: h.Enabled, key: h.Key, value: h.Value}
 }
-m.headersTable = newKvTable(hRows, m.keybindMgr)
+m.headersTable = newKvTable(hRows, m.keybindMgr, m.theme)
 
-m.bodyTypeSel = newSelectBox(bodyTypeOptions(), string(m.request.Body.Type))
+m.bodyTypeSel = newSelectBox(bodyTypeOptions(), string(m.request.Body.Type), m.theme)
 m.bodyEditing = false
 m.bodyEditVal = m.request.Body.Content
 m.bodyCursor = len([]rune(m.bodyEditVal))
@@ -117,15 +119,15 @@ fRows := make([]kvRow, len(m.request.Body.FormData))
 for i, f := range m.request.Body.FormData {
 fRows[i] = kvRow{enabled: f.Enabled, key: f.Key, value: f.Value, isFile: f.Type == models.FormFieldFile}
 }
-{ ft := newKvTable(fRows, m.keybindMgr); ft.showFileType = true; m.bodyFormTable = ft }
+{ ft := newKvTable(fRows, m.keybindMgr, m.theme); ft.showFileType = true; m.bodyFormTable = ft }
 
 qRows := make([]kvRow, len(m.request.QueryParams))
 for i, p := range m.request.QueryParams {
 qRows[i] = kvRow{enabled: p.Enabled, key: p.Key, value: p.Value}
 }
-m.queryTable = newKvTable(qRows, m.keybindMgr)
+m.queryTable = newKvTable(qRows, m.keybindMgr, m.theme)
 
-m.authTypeSel = newSelectBox(authTypeOptions(), string(m.request.Auth.Type))
+m.authTypeSel = newSelectBox(authTypeOptions(), string(m.request.Auth.Type), m.theme)
 m.authEditing = false
 m.authEditVal = ""
 m.authCursor = 0
@@ -794,9 +796,9 @@ for i, t := range editorTabs {
 style := lipgloss.NewStyle().Padding(0, 1)
 label := fmt.Sprintf("%d:%s", i+1, string(t))
 if t == m.activeTab {
-style = style.Bold(true).Underline(true).Foreground(lipgloss.Color("#00d7ff"))
+style = style.Bold(true).Underline(true).Foreground(lipgloss.Color(m.theme.Primary))
 } else {
-style = style.Foreground(lipgloss.Color("#626262"))
+style = style.Foreground(lipgloss.Color(m.theme.Dim))
 }
 parts = append(parts, style.Render(label))
 }
@@ -805,7 +807,7 @@ return strings.Join(parts, " ")
 
 func (m *EditorModel) renderTabContent(focused bool) string {
 if m.request == nil {
-return lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("Select a request from the list")
+return dimStyle(m.theme).Render("Select a request from the list")
 }
 switch m.activeTab {
 case TabURL:
@@ -839,9 +841,9 @@ return rows
 }
 
 func (m *EditorModel) renderURLTab(focused bool) string {
-dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-hdrStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#87d7ff"))
-rowBg := lipgloss.NewStyle().Background(lipgloss.Color("#1c1c2c"))
+dim := dimStyle(m.theme)
+hdrStyle := secondaryStyle(m.theme).Bold(true)
+rowBg := lipgloss.NewStyle().Background(lipgloss.Color(m.theme.InputBg))
 cw := m.contentWidth()
 
 hdr := hdrStyle.Render("  " + padRight("Field", 10) + " Value")
@@ -859,11 +861,11 @@ methodLine = "> " + padRight("Method", 10) + " " + m.methodSel.renderInline(meth
 
 var urlValStr string
 if m.urlEditing && urlFocused {
-urlValStr = renderEditCursor(m.urlEditVal, m.urlCursor, cw-14)
+urlValStr = renderEditCursor(m.urlEditVal, m.urlCursor, cw-14, m.theme)
 } else {
 urlValStr = m.urlEditVal
 if urlFocused {
-urlValStr = lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff")).Render(urlValStr)
+urlValStr = accentStyle(m.theme).Render(urlValStr)
 }
 }
 
@@ -872,31 +874,31 @@ if urlFocused {
 urlLine = rowBg.Render("> "+padRight("URL", 10)+" ") + urlValStr
 }
 
-hint := dim.Render("  ↑↓ navigate  ←→ cycle method  e edit URL  1-5 tabs")
+hint := buildHintsLine(m.keybindMgr, "editor", "URL", m.theme)
 return strings.Join([]string{hdr, sep, methodLine, urlLine, "", hint}, "\n")
 }
 
 func (m *EditorModel) renderHeadersTab(focused bool) string {
-dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+dim := dimStyle(m.theme)
 cw := m.contentWidth()
 hdr := dim.Render("  " + strings.Repeat("─", cw-2))
-hint := dim.Render("  ↑↓←→ navigate  e edit cell  space toggle  d delete")
+hint := buildHintsLine(m.keybindMgr, "editor", "Headers", m.theme)
 content := m.headersTable.renderWithMaxRows(cw, focused, m.tableMaxRows())
 return strings.Join([]string{content, hdr, hint}, "\n")
 }
 
 func (m *EditorModel) renderQueryTab(focused bool) string {
-dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+dim := dimStyle(m.theme)
 cw := m.contentWidth()
 hdr := dim.Render("  " + strings.Repeat("─", cw-2))
-hint := dim.Render("  ↑↓←→ navigate  e edit cell  space toggle  d delete")
+hint := buildHintsLine(m.keybindMgr, "editor", "Query", m.theme)
 content := m.queryTable.renderWithMaxRows(cw, focused, m.tableMaxRows())
 return strings.Join([]string{content, hdr, hint}, "\n")
 }
 
 func (m *EditorModel) renderBodyTab(focused bool) string {
-dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-rowBg := lipgloss.NewStyle().Background(lipgloss.Color("#1c1c2c"))
+dim := dimStyle(m.theme)
+rowBg := lipgloss.NewStyle().Background(lipgloss.Color(m.theme.InputBg))
 cw := m.contentWidth()
 
 typeFocused := focused && m.bodyRowIdx == 0
@@ -916,7 +918,7 @@ case models.BodyNone:
 content = dim.Render("  (no body)")
 case models.BodyRaw, models.BodyJSON:
 if m.bodyEditing && contentFocused {
-content = "  " + renderEditCursor(m.bodyEditVal, m.bodyCursor, cw-4)
+content = "  " + renderEditCursor(m.bodyEditVal, m.bodyCursor, cw-4, m.theme)
 } else {
 body := m.bodyEditVal
 if body == "" {
@@ -932,15 +934,15 @@ case models.BodyFormData, models.BodyURLEncoded:
 content = m.bodyFormTable.renderWithMaxRows(cw, contentFocused, m.tableMaxRows())
 }
 
-hint := dim.Render("  ↑↓ navigate  ←→ cycle type  e edit  1-5 tabs")
+hint := buildHintsLine(m.keybindMgr, "editor", "Body", m.theme)
 return strings.Join([]string{typeLine, "", content, "", hint}, "\n")
 }
 
 func (m *EditorModel) renderAuthTab(focused bool) string {
-dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
-lbl := lipgloss.NewStyle().Foreground(lipgloss.Color("#87d7ff"))
-rowBg := lipgloss.NewStyle().Background(lipgloss.Color("#1c1c2c"))
-hdrStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#87d7ff"))
+dim := dimStyle(m.theme)
+lbl := secondaryStyle(m.theme)
+rowBg := lipgloss.NewStyle().Background(lipgloss.Color(m.theme.InputBg))
+hdrStyle := secondaryStyle(m.theme).Bold(true)
 cw := m.contentWidth()
 
 typeFocused := focused && m.authRowIdx == 0
@@ -961,7 +963,7 @@ rowIdx := i + 1
 isFocused := focused && m.authRowIdx == rowIdx
 var valStr string
 if isFocused && m.authEditing {
-valStr = renderEditCursor(m.authEditVal, m.authCursor, cw-16)
+valStr = renderEditCursor(m.authEditVal, m.authCursor, cw-16, m.theme)
 } else {
 val := m.getAuthFieldValue(i)
 if name == "Password" || name == "Token" {
@@ -969,12 +971,12 @@ val = maskSecret(val)
 }
 valStr = val
 if isFocused {
-valStr = lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff")).Render(valStr)
+valStr = accentStyle(m.theme).Render(valStr)
 }
 }
 ptr := "  "
 if isFocused {
-ptr = lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff")).Render("> ")
+ptr = accentStyle(m.theme).Render("> ")
 }
 line := ptr + lbl.Render(padRight(name, 12)) + " " + valStr
 if isFocused {
@@ -983,7 +985,7 @@ line = rowBg.Render(line)
 fieldLines = append(fieldLines, line)
 }
 
-hint := dim.Render("  ↑↓ navigate  ←→ cycle type  e edit field")
+hint := buildHintsLine(m.keybindMgr, "editor", "Auth", m.theme)
 parts := []string{typeLine, hdr, sep}
 parts = append(parts, fieldLines...)
 parts = append(parts, "", hint)

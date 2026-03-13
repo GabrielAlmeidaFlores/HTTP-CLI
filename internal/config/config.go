@@ -34,18 +34,34 @@ type LayoutConfig struct {
 }
 
 type ThemeConfig struct {
-	Primary      string `json:"primary"`
-	Secondary    string `json:"secondary"`
-	Success      string `json:"success"`
-	Error        string `json:"error"`
-	Warning      string `json:"warning"`
-	FocusBorder  string `json:"focus_border"`
-	BlurBorder   string `json:"blur_border"`
-	MethodGet    string `json:"method_get"`
-	MethodPost   string `json:"method_post"`
-	MethodPut    string `json:"method_put"`
-	MethodDelete string `json:"method_delete"`
-	MethodPatch  string `json:"method_patch"`
+	Primary       string `json:"primary"`
+	Secondary     string `json:"secondary"`
+	Dim           string `json:"dim"`
+	Success       string `json:"success"`
+	Error         string `json:"error"`
+	Warning       string `json:"warning"`
+	FocusBorder   string `json:"focus_border"`
+	BlurBorder    string `json:"blur_border"`
+	TextFg        string `json:"text_fg"`
+	ValueFg       string `json:"value_fg"`
+	LineNumFg     string `json:"line_num_fg"`
+	SeparatorFg   string `json:"separator_fg"`
+	Black         string `json:"black"`
+	InputBg       string `json:"input_bg"`
+	SelectionBg   string `json:"selection_bg"`
+	ListSelectBg  string `json:"list_select_bg"`
+	AppBg         string `json:"app_bg"`
+	StatusBg      string `json:"status_bg"`
+	VimCursorBg   string `json:"vim_cursor_bg"`
+	VimStatusBg   string `json:"vim_status_bg"`
+	ModeBg        string `json:"mode_bg"`
+	ModeEditingBg string `json:"mode_editing_bg"`
+	MethodGet     string `json:"method_get"`
+	MethodPost    string `json:"method_post"`
+	MethodPut     string `json:"method_put"`
+	MethodDelete  string `json:"method_delete"`
+	MethodPatch   string `json:"method_patch"`
+	MethodDefault string `json:"method_default"`
 }
 
 type UIConfig struct {

@@ -29,24 +29,28 @@ func methodColor(method string, theme config.ThemeConfig) string {
 	case "PATCH":
 		return theme.MethodPatch
 	default:
-		return "#ffffff"
+		return theme.MethodDefault
 	}
 }
 
-func accentStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff"))
+func accentStyle(theme config.ThemeConfig) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Primary))
 }
 
-func dimStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+func secondaryStyle(theme config.ThemeConfig) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Secondary))
 }
 
-func errorStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("#d70000"))
+func dimStyle(theme config.ThemeConfig) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Dim))
 }
 
-func successStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("#00d700"))
+func errorStyle(theme config.ThemeConfig) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Error))
+}
+
+func successStyle(theme config.ThemeConfig) lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Success))
 }
 
 func modalBorderStyle(color string) lipgloss.Style {
@@ -65,3 +69,4 @@ func modalWidth(screenW int) int {
 	}
 	return w
 }
+

@@ -49,6 +49,8 @@ func (m *Manager) loadFromConfig(cfg *config.Config) {
 		"response":          10,
 		"cell_edit_modal":   10,
 		"curl_import_modal": 10,
+		"curl_export_modal": 10,
+		"vim_viewer":        10,
 	}
 
 	for panel, actions := range cfg.Keybindings {

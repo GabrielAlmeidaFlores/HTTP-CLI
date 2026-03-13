@@ -54,64 +54,52 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 func (a *App) handleResponseKey(msg tea.KeyMsg) tea.Cmd {
 	key := msg.String()
 
-	switch key {
-	case "j", "down":
-		a.response.ScrollDown()
-		return nil
-	case "k", "up":
-		a.response.ScrollUp()
-		return nil
-	case "tab", "l":
-		a.response.NextTab()
-		return nil
-	case "shift+tab", "h":
-		a.response.PrevTab()
-		return nil
-	case "g":
-		a.response.scrollY = 0
-		return nil
-	case "G":
-		a.response.scrollY = a.response.totalContentLines() - a.response.contentHeight()
-		if a.response.scrollY < 0 {
-			a.response.scrollY = 0
-		}
-		return nil
-	case "ctrl+d":
-		a.response.scrollY += a.response.contentHeight() / 2
-		return nil
-	case "ctrl+u":
-		a.response.scrollY -= a.response.contentHeight() / 2
-		if a.response.scrollY < 0 {
-			a.response.scrollY = 0
-		}
-		return nil
-	case "1":
-		a.response.activeTab = responseTabBody
-		a.response.scrollY = 0
-		return nil
-	case "2":
-		a.response.activeTab = responseTabHeaders
-		a.response.scrollY = 0
-		return nil
-	case "3":
-		a.response.activeTab = responseTabInfo
-		a.response.scrollY = 0
-		return nil
-	}
-
-	if binding, ok := a.keybindMgr.Resolve(key, "response"); ok {
-		switch binding.Action {
-		case "next_panel":
-			a.nextPanel()
-		case "prev_panel":
-			a.prevPanel()
-		default:
+	binding, ok := a.keybindMgr.Resolve(key, "response")
+	if !ok {
+		binding, ok = a.keybindMgr.Resolve(key, "global")
+		if ok {
 			return a.executeAction(binding.Action, binding.Panel)
 		}
 		return nil
 	}
 
-	if binding, ok := a.keybindMgr.Resolve(key, "global"); ok {
+	switch binding.Action {
+	case "scroll_down":
+		a.response.ScrollDown()
+	case "scroll_up":
+		a.response.ScrollUp()
+	case "next_tab":
+		a.response.NextTab()
+	case "prev_tab":
+		a.response.PrevTab()
+	case "scroll_top":
+		a.response.scrollY = 0
+	case "scroll_bottom":
+		a.response.scrollY = a.response.totalContentLines() - a.response.contentHeight()
+		if a.response.scrollY < 0 {
+			a.response.scrollY = 0
+		}
+	case "half_page_down":
+		a.response.scrollY += a.response.contentHeight() / 2
+	case "half_page_up":
+		a.response.scrollY -= a.response.contentHeight() / 2
+		if a.response.scrollY < 0 {
+			a.response.scrollY = 0
+		}
+	case "tab_1":
+		a.response.activeTab = responseTabBody
+		a.response.scrollY = 0
+	case "tab_2":
+		a.response.activeTab = responseTabHeaders
+		a.response.scrollY = 0
+	case "tab_3":
+		a.response.activeTab = responseTabInfo
+		a.response.scrollY = 0
+	case "next_panel":
+		a.nextPanel()
+	case "prev_panel":
+		a.prevPanel()
+	default:
 		return a.executeAction(binding.Action, binding.Panel)
 	}
 
@@ -121,55 +109,59 @@ func (a *App) handleResponseKey(msg tea.KeyMsg) tea.Cmd {
 func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 	key := msg.String()
 
-	if key == "ctrl+o" && a.editor.IsSubEditing() {
-		return a.openExternalEditorWithSource(a.editor.CurrentEditValue(), "editor")
-	}
-
-	if binding, ok := a.keybindMgr.Resolve(key, "editor"); ok {
-		switch binding.Action {
-		case "next_panel":
-			a.nextPanel()
-			return nil
-		case "prev_panel":
-			a.prevPanel()
-			return nil
-		case "execute", "execute_request":
-			return a.executeRequest()
-		case "save":
-			if a.selectedReq != nil {
-				_ = a.store.SaveRequest(context.Background(), a.selectedReq)
-				a.setStatus("Saved")
-			}
-			return nil
+	binding, ok := a.keybindMgr.Resolve(key, "editor")
+	if !ok {
+		if a.selectedReq != nil {
+			return a.editor.handleKey(msg, a.selectedReq)
 		}
-
-		if a.selectedReq != nil && !a.editor.IsSubEditing() {
-			switch binding.Action {
-			case "exit":
-				return tea.Quit
-			case "search":
-				a.isSearching = true
-				a.searchQuery = ""
-				a.focused = PanelRequestList
-				return nil
-			case "tab_1", "tab_2", "tab_3", "tab_4", "tab_5":
-				n := int(binding.Action[4] - '0')
-				a.editor.JumpToTab(n)
-				return nil
-			case "insert_mode":
-				if a.editor.CurrentCellIsText() {
-					a.openCellEdit()
-					return nil
-				}
-			}
-		}
-	}
-
-	if a.selectedReq == nil {
 		return nil
 	}
 
-	return a.editor.handleKey(msg, a.selectedReq)
+	switch binding.Action {
+	case "open_external_editor":
+		if a.editor.IsSubEditing() {
+			return a.openExternalEditorWithSource(a.editor.CurrentEditValue(), "editor")
+		}
+	case "next_panel":
+		a.nextPanel()
+	case "prev_panel":
+		a.prevPanel()
+	case "execute", "execute_request":
+		return a.executeRequest()
+	case "save":
+		if a.selectedReq != nil {
+			if err := a.store.SaveRequest(context.Background(), a.selectedReq); err != nil {
+				a.setStatus("Save failed: " + err.Error())
+			} else {
+				a.setStatus("Saved")
+			}
+		}
+	case "exit":
+		if a.selectedReq != nil && !a.editor.IsSubEditing() {
+			return tea.Quit
+		}
+	case "search":
+		if a.selectedReq != nil && !a.editor.IsSubEditing() {
+			a.isSearching = true
+			a.searchQuery = ""
+			a.focused = PanelRequestList
+		}
+	case "tab_1", "tab_2", "tab_3", "tab_4", "tab_5":
+		if a.selectedReq != nil && !a.editor.IsSubEditing() {
+			n := int(binding.Action[4] - '0')
+			a.editor.JumpToTab(n)
+		}
+	case "insert_mode":
+		if a.selectedReq != nil && !a.editor.IsSubEditing() && a.editor.CurrentCellIsText() {
+			a.openCellEdit()
+		}
+	default:
+		if a.selectedReq != nil {
+			return a.editor.handleKey(msg, a.selectedReq)
+		}
+	}
+
+	return nil
 }
 
 func (a *App) openCellEdit() {

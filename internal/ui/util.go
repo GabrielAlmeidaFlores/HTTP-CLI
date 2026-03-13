@@ -6,7 +6,24 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/user/http-cli/internal/config"
+	"github.com/user/http-cli/internal/ui/keybindings"
 )
+
+func buildHintsLine(km *keybindings.Manager, panel, activeTab string, theme config.ThemeConfig) string {
+	hints := km.GetHints(panel, activeTab)
+	keyStyle := accentStyle(theme).Bold(true)
+	descStyle := dimStyle(theme)
+	var parts []string
+	for _, h := range hints {
+		if len(h.Keys) == 0 {
+			continue
+		}
+		parts = append(parts, keyStyle.Render(h.Keys[0])+" "+descStyle.Render(h.Description))
+	}
+	return strings.Join(parts, "  ")
+}
 
 func padRight(s string, width int) string {
 	runes := []rune(s)
