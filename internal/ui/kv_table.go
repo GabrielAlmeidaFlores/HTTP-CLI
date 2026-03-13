@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -20,6 +21,8 @@ type kvTable struct {
 	rows         []kvRow
 	rowIdx       int
 	colIdx       int
+	scrollOffset int
+	visibleRows  int
 	editing      bool
 	editVal      string
 	editCursor   int
@@ -162,11 +165,13 @@ func (t *kvTable) handleNavKey(key string) bool {
 			t.rows = append(t.rows, kvRow{enabled: true})
 			t.rowIdx++
 		}
+		t.ensureVisible()
 		return true
 	case "up":
 		if t.rowIdx > 0 {
 			t.rowIdx--
 		}
+		t.ensureVisible()
 		return true
 	case "left":
 		if t.colIdx > 0 {
@@ -201,6 +206,7 @@ func (t *kvTable) handleNavKey(key string) bool {
 			if t.rowIdx >= len(t.rows) {
 				t.rowIdx = len(t.rows) - 1
 			}
+			t.ensureVisible()
 		}
 		return true
 	case "toggle_type":
@@ -211,6 +217,18 @@ func (t *kvTable) handleNavKey(key string) bool {
 	}
 
 	return false
+}
+
+func (t *kvTable) ensureVisible() {
+	if t.visibleRows <= 0 {
+		return
+	}
+	if t.rowIdx < t.scrollOffset {
+		t.scrollOffset = t.rowIdx
+	}
+	if t.rowIdx >= t.scrollOffset+t.visibleRows {
+		t.scrollOffset = t.rowIdx - t.visibleRows + 1
+	}
 }
 
 func (t *kvTable) toHeaders() []models.Header {
@@ -248,6 +266,10 @@ func (t *kvTable) toFormFields() []models.FormField {
 }
 
 func (t *kvTable) render(width int, insertMode bool) string {
+	return t.renderWithMaxRows(width, insertMode, 0)
+}
+
+func (t *kvTable) renderWithMaxRows(width int, insertMode bool, maxRows int) string {
 	dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 	hdrStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#87d7ff"))
 	enOn := lipgloss.NewStyle().Foreground(lipgloss.Color("#00af00"))
@@ -277,8 +299,24 @@ func (t *kvTable) render(width int, insertMode bool) string {
 	hdr := hdrStyle.Render("  "+padRight("✓", 3)+padRight("Key", keyW+1)) + hdrType + hdrStyle.Render("Value")
 	sep := dim.Render("  " + strings.Repeat("─", width-4))
 
+	if maxRows > 0 {
+		t.visibleRows = maxRows
+		t.ensureVisible()
+	}
+
+	start := 0
+	end := len(t.rows)
+	if maxRows > 0 && len(t.rows) > maxRows {
+		start = t.scrollOffset
+		end = start + maxRows
+		if end > len(t.rows) {
+			end = len(t.rows)
+		}
+	}
+
 	var rows []string
-	for i, r := range t.rows {
+	for i := start; i < end; i++ {
+		r := t.rows[i]
 		isCurrentRow := insertMode && i == t.rowIdx
 
 		enStr := enOn.Render("✓")
@@ -364,8 +402,16 @@ func (t *kvTable) render(width int, insertMode bool) string {
 		rows = append(rows, dim.Render("  (empty)"))
 	}
 
+	scrollIndicator := ""
+	if maxRows > 0 && len(t.rows) > maxRows {
+		scrollIndicator = dim.Render(fmt.Sprintf("  ↑↓ %d/%d", t.rowIdx+1, len(t.rows)))
+	}
+
 	parts := []string{hdr, sep}
 	parts = append(parts, rows...)
+	if scrollIndicator != "" {
+		parts = append(parts, scrollIndicator)
+	}
 	return strings.Join(parts, "\n")
 }
 

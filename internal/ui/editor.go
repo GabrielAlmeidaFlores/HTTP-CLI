@@ -830,6 +830,14 @@ return 30
 return w
 }
 
+func (m *EditorModel) tableMaxRows() int {
+rows := m.height - 10
+if rows < 3 {
+return 3
+}
+return rows
+}
+
 func (m *EditorModel) renderURLTab(focused bool) string {
 dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 hdrStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#87d7ff"))
@@ -873,7 +881,7 @@ dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 cw := m.contentWidth()
 hdr := dim.Render("  " + strings.Repeat("─", cw-2))
 hint := dim.Render("  ↑↓←→ navigate  e edit cell  space toggle  d delete")
-content := m.headersTable.render(cw, focused)
+content := m.headersTable.renderWithMaxRows(cw, focused, m.tableMaxRows())
 return strings.Join([]string{content, hdr, hint}, "\n")
 }
 
@@ -882,7 +890,7 @@ dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 cw := m.contentWidth()
 hdr := dim.Render("  " + strings.Repeat("─", cw-2))
 hint := dim.Render("  ↑↓←→ navigate  e edit cell  space toggle  d delete")
-content := m.queryTable.render(cw, focused)
+content := m.queryTable.renderWithMaxRows(cw, focused, m.tableMaxRows())
 return strings.Join([]string{content, hdr, hint}, "\n")
 }
 
@@ -921,7 +929,7 @@ content = "  " + body
 }
 }
 case models.BodyFormData, models.BodyURLEncoded:
-content = m.bodyFormTable.render(cw, contentFocused)
+content = m.bodyFormTable.renderWithMaxRows(cw, contentFocused, m.tableMaxRows())
 }
 
 hint := dim.Render("  ↑↓ navigate  ←→ cycle type  e edit  1-5 tabs")
