@@ -42,11 +42,13 @@ func (m *Manager) loadFromConfig(cfg *config.Config) {
 	m.byKey = make(map[string][]Binding)
 
 	panelPriority := map[string]int{
-		"global":       0,
-		"navigation":   1,
-		"request_list": 10,
-		"editor":       10,
-		"response":     10,
+		"global":            0,
+		"navigation":        1,
+		"request_list":      10,
+		"editor":            10,
+		"response":          10,
+		"cell_edit_modal":   10,
+		"curl_import_modal": 10,
 	}
 
 	for panel, actions := range cfg.Keybindings {
@@ -118,7 +120,7 @@ func (m *Manager) GetHints(panel, activeTab string) []Binding {
 			continue
 		}
 
-		if activeTab != "" && b.Tab != activeTab {
+		if activeTab != "" && b.Tab != "" && b.Tab != activeTab {
 			continue
 		}
 
@@ -145,16 +147,18 @@ func matchesPanel(b Binding, panel string) bool {
 }
 
 func scoreBinding(b Binding, panel string) int {
+	score := 0
 	if b.Panel == panel {
-		return 20
+		score = 20
+	} else if b.Panel == "global" {
+		score = 5
+	} else if b.Panel == "navigation" {
+		score = 3
 	}
-	if b.Panel == "global" {
-		return 5
+	if b.Tab == "" {
+		score++
 	}
-	if b.Panel == "navigation" {
-		return 3
-	}
-	return 0
+	return score
 }
 
 func normalizeKey(key string) string {

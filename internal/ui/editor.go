@@ -56,7 +56,7 @@ authCursor  int
 }
 
 func newEditorModel(km *keybindings.Manager) EditorModel {
-ft := newKvTable(nil)
+ft := newKvTable(nil, km)
 ft.showFileType = true
 return EditorModel{
 keybindMgr:    km,
@@ -64,8 +64,8 @@ activeTab:     TabURL,
 methodSel:     newSelectBox(methodOptions(), "GET"),
 bodyTypeSel:   newSelectBox(bodyTypeOptions(), "none"),
 authTypeSel:   newSelectBox(authTypeOptions(), "none"),
-headersTable:  newKvTable(nil),
-queryTable:    newKvTable(nil),
+headersTable:  newKvTable(nil, km),
+queryTable:    newKvTable(nil, km),
 bodyFormTable: ft,
 }
 }
@@ -87,6 +87,10 @@ m.request = req
 m.syncFromRequest()
 }
 
+func (m *EditorModel) HasRequest() bool {
+return m.request != nil
+}
+
 func (m *EditorModel) syncFromRequest() {
 if m.request == nil {
 return
@@ -101,7 +105,7 @@ hRows := make([]kvRow, len(m.request.Headers))
 for i, h := range m.request.Headers {
 hRows[i] = kvRow{enabled: h.Enabled, key: h.Key, value: h.Value}
 }
-m.headersTable = newKvTable(hRows)
+m.headersTable = newKvTable(hRows, m.keybindMgr)
 
 m.bodyTypeSel = newSelectBox(bodyTypeOptions(), string(m.request.Body.Type))
 m.bodyEditing = false
@@ -112,13 +116,13 @@ fRows := make([]kvRow, len(m.request.Body.FormData))
 for i, f := range m.request.Body.FormData {
 fRows[i] = kvRow{enabled: f.Enabled, key: f.Key, value: f.Value, isFile: f.Type == models.FormFieldFile}
 }
-{ ft := newKvTable(fRows); ft.showFileType = true; m.bodyFormTable = ft }
+{ ft := newKvTable(fRows, m.keybindMgr); ft.showFileType = true; m.bodyFormTable = ft }
 
 qRows := make([]kvRow, len(m.request.QueryParams))
 for i, p := range m.request.QueryParams {
 qRows[i] = kvRow{enabled: p.Enabled, key: p.Key, value: p.Value}
 }
-m.queryTable = newKvTable(qRows)
+m.queryTable = newKvTable(qRows, m.keybindMgr)
 
 m.authTypeSel = newSelectBox(authTypeOptions(), string(m.request.Auth.Type))
 m.authEditing = false
@@ -226,6 +230,16 @@ m.syncFromRequest()
 }
 }
 
+func (m *EditorModel) resolveAction(key string) string {
+if m.keybindMgr == nil {
+return ""
+}
+if b, ok := m.keybindMgr.Resolve(key, "editor"); ok && b.Panel == "editor" {
+return b.Action
+}
+return ""
+}
+
 func (m *EditorModel) handleKey(msg tea.KeyMsg, req *models.Request) tea.Cmd {
 if req == nil {
 return nil
@@ -233,18 +247,20 @@ return nil
 m.request = req
 key := msg.String()
 
-if key == "esc" {
+action := m.resolveAction(key)
+
+if key == "esc" || action == "normal_mode" {
 m.CancelSubEdit()
 return nil
 }
 
-switch key {
-case "]":
+switch action {
+case "next_tab":
 m.syncToRequest()
 m.nextTab()
 m.syncFromRequest()
 return nil
-case "[":
+case "prev_tab":
 m.syncToRequest()
 m.prevTab()
 m.syncFromRequest()
@@ -253,25 +269,25 @@ return nil
 
 switch m.activeTab {
 case TabURL:
-m.handleURLKey(key)
+m.handleURLKey(key, action)
 case TabHeaders:
 m.handleHeadersKey(key)
 case TabBody:
-m.handleBodyKey(key)
+m.handleBodyKey(key, action)
 case TabQuery:
 m.handleQueryKey(key)
 case TabAuth:
-m.handleAuthKey(key)
+m.handleAuthKey(key, action)
 }
 
 m.syncToRequest()
 return nil
 }
 
-func (m *EditorModel) handleURLKey(key string) {
+func (m *EditorModel) handleURLKey(key string, action string) {
 if m.urlRowIdx == 0 {
 if m.methodSel.isOpen() {
-consumed, changed := m.methodSel.handleKey(key)
+consumed, changed := m.methodSel.handleKey(key, action)
 if consumed {
 if changed {
 m.request.Method = models.HTTPMethod(m.methodSel.value())
@@ -279,14 +295,14 @@ m.request.Method = models.HTTPMethod(m.methodSel.value())
 return
 }
 } else {
-switch key {
-case "down":
+switch {
+case key == "down":
 m.urlRowIdx = 1
-case "enter", " ", "e":
+case key == "enter" || key == " " || action == "insert_mode":
 m.methodSel.open = true
-case "right":
+case key == "right":
 m.methodSel.next()
-case "left":
+case key == "left":
 m.methodSel.prev()
 }
 }
@@ -329,10 +345,10 @@ m.urlCursor++
 }
 }
 } else {
-switch key {
-case "up":
+switch {
+case key == "up":
 m.urlRowIdx = 0
-case "e":
+case action == "insert_mode":
 m.urlEditing = true
 m.urlCursor = len([]rune(m.urlEditVal))
 }
@@ -347,29 +363,27 @@ func (m *EditorModel) handleQueryKey(key string) {
 m.queryTable.handleKey(key)
 }
 
-func (m *EditorModel) handleBodyKey(key string) {
+func (m *EditorModel) handleBodyKey(key string, action string) {
 bt := models.BodyType(m.bodyTypeSel.value())
 
 if m.bodyRowIdx == 0 {
 if m.bodyTypeSel.isOpen() {
-consumed, changed := m.bodyTypeSel.handleKey(key)
+consumed, changed := m.bodyTypeSel.handleKey(key, action)
 if consumed {
 if changed {
 m.request.Body.Type = models.BodyType(m.bodyTypeSel.value())
-bt = models.BodyType(m.bodyTypeSel.value())
-_ = bt
 }
 return
 }
 } else {
-switch key {
-case "down":
+switch {
+case key == "down":
 m.bodyRowIdx = 1
-case "enter", " ", "e":
+case key == "enter" || key == " " || action == "insert_mode":
 m.bodyTypeSel.open = true
-case "right":
+case key == "right":
 m.bodyTypeSel.next()
-case "left":
+case key == "left":
 m.bodyTypeSel.prev()
 }
 }
@@ -384,7 +398,7 @@ if key == "up" {
 m.bodyRowIdx = 0
 }
 case models.BodyRaw, models.BodyJSON:
-m.handleBodyTextKey(key)
+m.handleBodyTextKey(key, action)
 case models.BodyFormData, models.BodyURLEncoded:
 if (key == "up") && !m.bodyFormTable.editing && m.bodyFormTable.rowIdx == 0 {
 m.bodyRowIdx = 0
@@ -394,7 +408,7 @@ m.bodyFormTable.handleKey(key)
 }
 }
 
-func (m *EditorModel) handleBodyTextKey(key string) {
+func (m *EditorModel) handleBodyTextKey(key string, action string) {
 if m.bodyEditing {
 switch key {
 case "enter":
@@ -431,10 +445,10 @@ m.bodyCursor++
 }
 }
 } else {
-switch key {
-case "up":
+switch {
+case key == "up":
 m.bodyRowIdx = 0
-case "e":
+case action == "insert_mode":
 m.bodyEditing = true
 m.bodyCursor = len([]rune(m.bodyEditVal))
 }
@@ -504,12 +518,12 @@ m.request.Auth.In = val
 }
 }
 
-func (m *EditorModel) handleAuthKey(key string) {
+func (m *EditorModel) handleAuthKey(key string, action string) {
 fields := m.authFieldNames()
 
 if m.authRowIdx == 0 {
 if m.authTypeSel.isOpen() {
-consumed, changed := m.authTypeSel.handleKey(key)
+consumed, changed := m.authTypeSel.handleKey(key, action)
 if consumed {
 if changed {
 m.request.Auth.Type = models.AuthType(m.authTypeSel.value())
@@ -518,17 +532,17 @@ m.authRowIdx = 0
 return
 }
 } else {
-switch key {
-case "down":
+switch {
+case key == "down":
 if len(fields) > 0 {
 m.authRowIdx = 1
 }
-case "enter", " ", "e":
+case key == "enter" || key == " " || action == "insert_mode":
 m.authTypeSel.open = true
-case "right":
+case key == "right":
 m.authTypeSel.next()
 m.request.Auth.Type = models.AuthType(m.authTypeSel.value())
-case "left":
+case key == "left":
 m.authTypeSel.prev()
 m.request.Auth.Type = models.AuthType(m.authTypeSel.value())
 }
@@ -575,18 +589,18 @@ m.authCursor++
 return
 }
 
-switch key {
-case "down":
+switch {
+case key == "down":
 if fieldIdx < len(fields)-1 {
 m.authRowIdx++
 }
-case "up":
+case key == "up":
 if fieldIdx > 0 {
 m.authRowIdx--
 } else {
 m.authRowIdx = 0
 }
-case "e":
+case action == "insert_mode":
 m.authEditVal = m.getAuthFieldValue(fieldIdx)
 m.authCursor = len([]rune(m.authEditVal))
 m.authEditing = true
@@ -968,18 +982,4 @@ return strings.Repeat("*", len(s))
 return s[:4] + strings.Repeat("*", len(s)-8) + s[len(s)-4:]
 }
 
-func padRight(s string, width int) string {
-runes := []rune(s)
-if len(runes) >= width {
-return string(runes[:width])
-}
-return s + strings.Repeat(" ", width-len(runes))
-}
 
-func truncate(s string, width int) string {
-runes := []rune(s)
-if len(runes) <= width {
-return s
-}
-return string(runes[:width-1]) + "…"
-}

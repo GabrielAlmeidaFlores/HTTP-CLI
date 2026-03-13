@@ -1,350 +1,174 @@
 package ui
 
 import (
-	"encoding/json"
-	"fmt"
-	"strings"
+"encoding/json"
+"fmt"
+"strings"
 
-	"github.com/charmbracelet/lipgloss"
+"github.com/charmbracelet/lipgloss"
 
-	"github.com/user/http-cli/internal/config"
-	"github.com/user/http-cli/internal/models"
-	"github.com/user/http-cli/internal/ui/keybindings"
+"github.com/user/http-cli/internal/config"
+"github.com/user/http-cli/internal/models"
+"github.com/user/http-cli/internal/ui/keybindings"
 )
-
-type ResponseTab string
-
-const (
-	RespTabBody    ResponseTab = "Body"
-	RespTabHeaders ResponseTab = "Headers"
-	RespTabInfo    ResponseTab = "Info"
-)
-
-var responseTabs = []ResponseTab{RespTabBody, RespTabHeaders, RespTabInfo}
 
 type ResponseModel struct {
-	keybindMgr   *keybindings.Manager
-	response     *models.Response
-	activeTab    ResponseTab
-	scrollOffset int
-	width        int
-	height       int
+keybindMgr *keybindings.Manager
+response   *models.Response
+width      int
+height     int
 }
 
 func newResponseModel(km *keybindings.Manager) ResponseModel {
-	return ResponseModel{
-		keybindMgr: km,
-		activeTab:  RespTabBody,
-	}
+return ResponseModel{keybindMgr: km}
 }
 
 func (m *ResponseModel) setResponse(resp *models.Response) {
-	m.response = resp
-	m.scrollOffset = 0
+m.response = resp
 }
 
 func (m *ResponseModel) setSize(w, h int) {
-	m.width = w
-	m.height = h
-}
-
-func (m *ResponseModel) totalLines() int {
-	switch m.activeTab {
-	case RespTabBody:
-		return len(strings.Split(m.FormattedBody(), "\n"))
-	case RespTabHeaders:
-		if m.response == nil {
-			return 0
-		}
-		return len(m.response.Headers)
-	}
-	return 0
-}
-
-func (m *ResponseModel) scrollDown(n int) {
-	m.scrollOffset += n
-	max := m.totalLines() - m.contentHeight() + 2
-	if max > 0 && m.scrollOffset > max {
-		m.scrollOffset = max
-	}
-}
-
-func (m *ResponseModel) scrollUp(n int) {
-	m.scrollOffset -= n
-	if m.scrollOffset < 0 {
-		m.scrollOffset = 0
-	}
-}
-
-func (m *ResponseModel) scrollToTop() {
-	m.scrollOffset = 0
-}
-
-func (m *ResponseModel) scrollToBottom() {
-	max := m.totalLines() - m.contentHeight() + 2
-	if max < 0 {
-		max = 0
-	}
-	m.scrollOffset = max
-}
-
-func (m *ResponseModel) halfPageDown() {
-	m.scrollDown(m.contentHeight() / 2)
-}
-
-func (m *ResponseModel) halfPageUp() {
-	m.scrollUp(m.contentHeight() / 2)
-}
-
-func (m *ResponseModel) fullPageDown() {
-	m.scrollDown(m.contentHeight())
-}
-
-func (m *ResponseModel) fullPageUp() {
-	m.scrollUp(m.contentHeight())
-}
-
-func (m *ResponseModel) nextTab() {
-	for i, t := range responseTabs {
-		if t == m.activeTab {
-			m.activeTab = responseTabs[(i+1)%len(responseTabs)]
-			return
-		}
-	}
-}
-
-func (m *ResponseModel) prevTab() {
-	for i, t := range responseTabs {
-		if t == m.activeTab {
-			m.activeTab = responseTabs[(i-1+len(responseTabs))%len(responseTabs)]
-			return
-		}
-	}
-}
-
-func (m *ResponseModel) JumpToTab(n int) {
-	if n >= 1 && n <= len(responseTabs) {
-		m.activeTab = responseTabs[n-1]
-	}
+m.width = w
+m.height = h
 }
 
 func (m *ResponseModel) ActiveTab() string {
-	return string(m.activeTab)
+return ""
 }
 
 func (m *ResponseModel) contentWidth() int {
-	w := m.width - 4
-	if w < 1 {
-		w = 1
-	}
-	return w
+w := m.width - 4
+if w < 1 {
+w = 1
+}
+return w
 }
 
 func (m *ResponseModel) contentHeight() int {
-	h := m.height - 4
-	if h < 1 {
-		h = 1
-	}
-	return h
+h := m.height - 4
+if h < 1 {
+h = 1
 }
-
-func (m *ResponseModel) view(focused bool, theme config.ThemeConfig) string {
-	borderColor := theme.BlurBorder
-	if focused {
-		borderColor = theme.FocusBorder
-	}
-
-	tabs := m.renderTabs()
-	tabLines := len(strings.Split(tabs, "\n"))
-	content := m.renderContent(theme, tabLines)
-
-	inner := lipgloss.NewStyle().
-		Width(m.contentWidth()).
-		Height(m.contentHeight()).
-		Render(lipgloss.JoinVertical(lipgloss.Left, tabs, content))
-
-	return lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(borderColor)).
-		Render(inner)
-}
-
-func (m *ResponseModel) renderTabs() string {
-	var parts []string
-	for i, t := range responseTabs {
-		style := lipgloss.NewStyle().Padding(0, 1)
-		label := fmt.Sprintf("%d:%s", i+1, string(t))
-		if t == m.activeTab {
-			style = style.Bold(true).
-				Underline(true).
-				Foreground(lipgloss.Color("#00d7ff"))
-		} else {
-			style = style.Foreground(lipgloss.Color("#626262"))
-		}
-		parts = append(parts, style.Render(label))
-	}
-
-	statusStr := ""
-	if m.response != nil {
-		color := "#00d700"
-		if m.response.IsClientError() {
-			color = "#d7d700"
-		} else if m.response.IsServerError() {
-			color = "#d70000"
-		}
-		statusStr = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color(color)).
-			Render(fmt.Sprintf(" %d", m.response.Status))
-	}
-
-	scrollStr := ""
-	if m.response != nil && m.scrollOffset > 0 {
-		total := m.totalLines()
-		pct := 0
-		if total > 0 {
-			pct = (m.scrollOffset * 100) / total
-		}
-		scrollStr = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#626262")).
-			Render(fmt.Sprintf("  %d%%", pct))
-	}
-
-	return strings.Join(parts, " ") + statusStr + scrollStr
-}
-
-func (m *ResponseModel) renderContent(theme config.ThemeConfig, usedLines int) string {
-	availableLines := m.contentHeight() - usedLines
-	if availableLines < 1 {
-		availableLines = 1
-	}
-
-	if m.response == nil {
-		return lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240")).
-			Render("No response yet\nPress ctrl+e to execute the request")
-	}
-
-	if m.response.Error != "" {
-		return lipgloss.NewStyle().
-			Foreground(lipgloss.Color(theme.Error)).
-			Render("Error: " + m.response.Error)
-	}
-
-	switch m.activeTab {
-	case RespTabBody:
-		return m.renderBody(availableLines)
-	case RespTabHeaders:
-		return m.renderHeaders(availableLines)
-	case RespTabInfo:
-		return m.renderInfo()
-	}
-	return ""
-}
-
-func (m *ResponseModel) renderBody(visible int) string {
-	body := m.FormattedBody()
-	cw := m.contentWidth()
-
-	lines := strings.Split(body, "\n")
-	var clipped []string
-	for _, l := range lines {
-		if len(l) > cw {
-			clipped = append(clipped, l[:cw])
-		} else {
-			clipped = append(clipped, l)
-		}
-	}
-
-	start := m.scrollOffset
-	if start >= len(clipped) {
-		start = len(clipped) - 1
-	}
-	if start < 0 {
-		start = 0
-	}
-
-	end := start + visible
-	if end > len(clipped) {
-		end = len(clipped)
-	}
-
-	scrollInfo := ""
-	if len(clipped) > visible {
-		scrollInfo = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#626262")).
-			Render(fmt.Sprintf(" (%d-%d/%d)", start+1, end, len(clipped)))
-	}
-	_ = scrollInfo
-
-	return strings.Join(clipped[start:end], "\n")
+return h
 }
 
 func (m *ResponseModel) FormattedBody() string {
-	if m.response == nil {
-		return ""
-	}
-	body := m.response.Body
-	ct := m.response.ContentType()
-	if strings.Contains(ct, "json") {
-		if pretty, err := prettyJSON(body); err == nil {
-			return pretty
-		}
-	}
-	return body
+if m.response == nil {
+return ""
+}
+body := m.response.Body
+ct := m.response.ContentType()
+if strings.Contains(ct, "json") {
+if pretty, err := prettyJSON(body); err == nil {
+return pretty
+}
+}
+return body
 }
 
-func (m *ResponseModel) renderHeaders(visible int) string {
-	cw := m.contentWidth()
-	var lines []string
-	for k, v := range m.response.Headers {
-		key := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#87d7ff")).
-			Render(k)
-		line := key + ": " + v
-		if len(line) > cw {
-			line = line[:cw]
-		}
-		lines = append(lines, line)
-	}
-
-	start := m.scrollOffset
-	if start >= len(lines) {
-		start = len(lines) - 1
-	}
-	if start < 0 {
-		start = 0
-	}
-	end := start + visible
-	if end > len(lines) {
-		end = len(lines)
-	}
-
-	return strings.Join(lines[start:end], "\n")
+func (m *ResponseModel) view(focused bool, theme config.ThemeConfig) string {
+borderColor := theme.BlurBorder
+if focused {
+borderColor = theme.FocusBorder
 }
 
-func (m *ResponseModel) renderInfo() string {
-	duration := m.response.Duration.Milliseconds()
-	size := formatSize(m.response.Size)
+inner := lipgloss.NewStyle().
+Width(m.contentWidth()).
+Height(m.contentHeight()).
+Render(m.renderContent(theme))
 
-	return fmt.Sprintf(
-		"Status:   %d %s\nDuration: %dms\nSize:     %s\nTime:     %s",
-		m.response.Status,
-		m.response.StatusText,
-		duration,
-		size,
-		m.response.Timestamp.Format("15:04:05"),
-	)
+return lipgloss.NewStyle().
+Border(lipgloss.RoundedBorder()).
+BorderForeground(lipgloss.Color(borderColor)).
+Render(inner)
+}
+
+func (m *ResponseModel) renderContent(theme config.ThemeConfig) string {
+if m.response == nil {
+return lipgloss.NewStyle().
+Foreground(lipgloss.Color("240")).
+Render("No response yet\n\nPress ctrl+e to execute the request")
+}
+
+if m.response.Error != "" {
+return lipgloss.NewStyle().
+Foreground(lipgloss.Color(theme.Error)).
+Render("Error: " + m.response.Error)
+}
+
+statusColor := theme.Success
+if m.response.IsClientError() {
+statusColor = theme.Warning
+} else if m.response.IsServerError() {
+statusColor = theme.Error
+}
+
+statusLine := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(statusColor)).
+Render(fmt.Sprintf("%d %s", m.response.Status, m.response.StatusText))
+
+meta := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).
+Render(fmt.Sprintf("  %dms  %s", m.response.Duration.Milliseconds(), formatSize(m.response.Size)))
+
+header := statusLine + meta
+
+sep := lipgloss.NewStyle().Foreground(lipgloss.Color("#333333")).
+Render(strings.Repeat("─", m.contentWidth()))
+
+body := m.FormattedBody()
+lines := strings.Split(body, "\n")
+available := m.contentHeight() - 3
+if available < 1 {
+available = 1
+}
+cw := m.contentWidth()
+var preview []string
+for i, l := range lines {
+if i >= available {
+break
+}
+if len([]rune(l)) > cw {
+l = string([]rune(l)[:cw])
+}
+preview = append(preview, l)
+}
+
+hint := lipgloss.NewStyle().Foreground(lipgloss.Color("#4e4e4e")).
+Render("v — open viewer")
+
+return lipgloss.JoinVertical(lipgloss.Left,
+header,
+sep,
+strings.Join(preview, "\n"),
+hint,
+)
 }
 
 func prettyJSON(s string) (string, error) {
-	var v interface{}
-	if err := json.Unmarshal([]byte(s), &v); err != nil {
-		return "", err
-	}
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
+var v interface{}
+if err := json.Unmarshal([]byte(s), &v); err != nil {
+return "", err
 }
+data, err := json.MarshalIndent(v, "", "  ")
+if err != nil {
+return "", err
+}
+return string(data), nil
+}
+
+func (m *ResponseModel) totalLines() int {
+return len(strings.Split(m.FormattedBody(), "\n"))
+}
+
+func (m *ResponseModel) scrollDown(_ int)  {}
+func (m *ResponseModel) scrollUp(_ int)    {}
+func (m *ResponseModel) scrollToTop()      {}
+func (m *ResponseModel) scrollToBottom()   {}
+func (m *ResponseModel) halfPageDown()     {}
+func (m *ResponseModel) halfPageUp()       {}
+func (m *ResponseModel) fullPageDown()     {}
+func (m *ResponseModel) fullPageUp()       {}
+func (m *ResponseModel) nextTab()          {}
+func (m *ResponseModel) prevTab()          {}
+func (m *ResponseModel) JumpToTab(_ int)   {}
+
+var _ = models.Request{}

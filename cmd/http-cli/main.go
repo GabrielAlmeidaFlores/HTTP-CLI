@@ -93,7 +93,14 @@ if err != nil {
 return fmt.Errorf("init store: %w", err)
 }
 
-app := ui.NewApp(cfgManager.Get(), store)
+cfg := cfgManager.Get()
+httpClient := transport.NewClient(
+cfg.RequestDefaults.TimeoutSeconds,
+cfg.RequestDefaults.FollowRedirects,
+cfg.RequestDefaults.VerifySSL,
+)
+
+app := ui.NewApp(cfg, store, httpClient, transport.ParseCurlCommand)
 p := tea.NewProgram(app, tea.WithAltScreen())
 if _, err := p.Run(); err != nil {
 return fmt.Errorf("TUI error: %w", err)

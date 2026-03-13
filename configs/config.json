@@ -2,78 +2,536 @@
   "version": "1.0.0",
   "keybindings": {
     "global": {
-      "exit": { "keys": ["q", "ctrl+c"], "description": "Quit application", "category": "Global", "visible": true },
-      "save": { "keys": ["ctrl+s"], "description": "Save current state", "category": "Global", "visible": true },
-      "execute_request": { "keys": ["ctrl+e"], "description": "Execute request", "category": "Global", "visible": true },
-      "search": { "keys": ["/"], "description": "Search", "category": "Global", "visible": true },
-      "cancel": { "keys": ["esc"], "description": "Cancel / back", "category": "Global", "visible": true },
-      "help": { "keys": ["?"], "description": "Show help", "category": "Global", "visible": false },
-      "next_panel": { "keys": ["tab"], "description": "Next panel", "category": "Navigation", "visible": true },
-      "prev_panel": { "keys": ["shift+tab"], "description": "Prev panel", "category": "Navigation", "visible": true }
+      "exit": {
+        "keys": [
+          "q",
+          "ctrl+c"
+        ],
+        "description": "Quit application",
+        "category": "Global",
+        "visible": true
+      },
+      "save": {
+        "keys": [
+          "ctrl+s"
+        ],
+        "description": "Save current state",
+        "category": "Global",
+        "visible": true
+      },
+      "execute_request": {
+        "keys": [
+          "ctrl+e"
+        ],
+        "description": "Execute request",
+        "category": "Global",
+        "visible": true
+      },
+      "search": {
+        "keys": [
+          "/"
+        ],
+        "description": "Search",
+        "category": "Global",
+        "visible": true
+      },
+      "cancel": {
+        "keys": [
+          "esc"
+        ],
+        "description": "Cancel / back",
+        "category": "Global",
+        "visible": true
+      },
+      "help": {
+        "keys": [
+          "?"
+        ],
+        "description": "Show help",
+        "category": "Global",
+        "visible": false
+      },
+      "next_panel": {
+        "keys": [
+          "tab"
+        ],
+        "description": "Next panel",
+        "category": "Navigation",
+        "visible": true
+      },
+      "prev_panel": {
+        "keys": [
+          "shift+tab"
+        ],
+        "description": "Prev panel",
+        "category": "Navigation",
+        "visible": true
+      }
     },
     "navigation": {
-      "down": { "keys": ["j", "down"], "description": "Move down", "category": "Navigation", "visible": true },
-      "up": { "keys": ["k", "up"], "description": "Move up", "category": "Navigation", "visible": true },
-      "left": { "keys": ["h", "left"], "description": "Move left", "category": "Navigation", "visible": false },
-      "right": { "keys": ["l", "right"], "description": "Move right", "category": "Navigation", "visible": false },
-      "goto_top": { "keys": ["g"], "description": "Go to top", "category": "Navigation", "visible": false },
-      "goto_bottom": { "keys": ["G"], "description": "Go to bottom", "category": "Navigation", "visible": false },
-      "focus_panel_1": { "keys": ["1"], "description": "Requests panel", "category": "Panels", "visible": true },
-      "focus_panel_2": { "keys": ["2"], "description": "Editor panel", "category": "Panels", "visible": true },
-      "focus_panel_3": { "keys": ["3"], "description": "Response panel", "category": "Panels", "visible": true }
+      "down": {
+        "keys": [
+          "j",
+          "down"
+        ],
+        "description": "Move down",
+        "category": "Navigation",
+        "visible": true
+      },
+      "up": {
+        "keys": [
+          "k",
+          "up"
+        ],
+        "description": "Move up",
+        "category": "Navigation",
+        "visible": true
+      },
+      "left": {
+        "keys": [
+          "h",
+          "left"
+        ],
+        "description": "Move left",
+        "category": "Navigation",
+        "visible": false
+      },
+      "right": {
+        "keys": [
+          "l",
+          "right"
+        ],
+        "description": "Move right",
+        "category": "Navigation",
+        "visible": false
+      },
+      "goto_top": {
+        "keys": [
+          "g"
+        ],
+        "description": "Go to top",
+        "category": "Navigation",
+        "visible": false
+      },
+      "goto_bottom": {
+        "keys": [
+          "G"
+        ],
+        "description": "Go to bottom",
+        "category": "Navigation",
+        "visible": false
+      },
+      "focus_panel_1": {
+        "keys": [
+          "1"
+        ],
+        "description": "Requests panel",
+        "category": "Panels",
+        "visible": true
+      },
+      "focus_panel_2": {
+        "keys": [
+          "2"
+        ],
+        "description": "Editor panel",
+        "category": "Panels",
+        "visible": true
+      },
+      "focus_panel_3": {
+        "keys": [
+          "3"
+        ],
+        "description": "Response panel",
+        "category": "Panels",
+        "visible": true
+      }
     },
     "request_list": {
-      "new_request": { "keys": ["n"], "description": "New request", "category": "Requests", "visible": true },
-      "import_curl": { "keys": ["I"], "description": "Import cURL", "category": "Requests", "visible": true },
-      "delete_request": { "keys": ["d"], "description": "Delete request", "category": "Requests", "visible": true },
-      "duplicate_request": { "keys": ["y"], "description": "Duplicate", "category": "Requests", "visible": true },
-      "rename_request": { "keys": ["r"], "description": "Rename", "category": "Requests", "visible": true },
-      "select_request": { "keys": ["enter"], "description": "Open request", "category": "Requests", "visible": true }
+      "new_request": {
+        "keys": [
+          "n"
+        ],
+        "description": "New request",
+        "category": "Requests",
+        "visible": true
+      },
+      "import_curl": {
+        "keys": [
+          "I"
+        ],
+        "description": "Import cURL",
+        "category": "Requests",
+        "visible": true
+      },
+      "delete_request": {
+        "keys": [
+          "d"
+        ],
+        "description": "Delete request",
+        "category": "Requests",
+        "visible": true
+      },
+      "duplicate_request": {
+        "keys": [
+          "y"
+        ],
+        "description": "Duplicate",
+        "category": "Requests",
+        "visible": true
+      },
+      "rename_request": {
+        "keys": [
+          "r"
+        ],
+        "description": "Rename",
+        "category": "Requests",
+        "visible": true
+      },
+      "select_request": {
+        "keys": [
+          "enter"
+        ],
+        "description": "Open request",
+        "category": "Requests",
+        "visible": true
+      }
     },
     "editor": {
-      "insert_mode": { "keys": ["e"], "description": "Edit cell", "category": "Editor", "visible": false },
-      "normal_mode": { "keys": ["esc"], "description": "Cancel edit", "category": "Editor", "visible": false },
-      "next_tab": { "keys": ["]"], "description": "Next tab", "category": "Editor", "visible": false },
-      "prev_tab": { "keys": ["["], "description": "Prev tab", "category": "Editor", "visible": false },
-      "execute": { "keys": ["ctrl+e"], "description": "Send request", "category": "Editor", "visible": false },
-      "tab_1": { "keys": ["1"], "description": "URL tab", "category": "Editor Tabs", "visible": false },
-      "tab_2": { "keys": ["2"], "description": "Headers tab", "category": "Editor Tabs", "visible": false },
-      "tab_3": { "keys": ["3"], "description": "Body tab", "category": "Editor Tabs", "visible": false },
-      "tab_4": { "keys": ["4"], "description": "Query tab", "category": "Editor Tabs", "visible": false },
-      "tab_5": { "keys": ["5"], "description": "Auth tab", "category": "Editor Tabs", "visible": false },
-      "url_hint_arrows": { "keys": ["↑↓"], "description": "Navigate rows", "category": "URL", "visible": true, "tab": "URL" },
-      "url_hint_lr": { "keys": ["←→"], "description": "Cycle method", "category": "URL", "visible": true, "tab": "URL" },
-      "url_hint_e": { "keys": ["e"], "description": "Edit URL", "category": "URL", "visible": true, "tab": "URL" },
-      "headers_hint_arrows": { "keys": ["↑↓←→"], "description": "Navigate", "category": "Headers", "visible": true, "tab": "Headers" },
-      "headers_hint_e": { "keys": ["e"], "description": "Edit cell", "category": "Headers", "visible": true, "tab": "Headers" },
-      "headers_hint_space": { "keys": ["space"], "description": "Toggle", "category": "Headers", "visible": true, "tab": "Headers" },
-      "headers_hint_d": { "keys": ["d"], "description": "Delete row", "category": "Headers", "visible": true, "tab": "Headers" },
-      "body_hint_arrows": { "keys": ["↑↓←→"], "description": "Navigate", "category": "Body", "visible": true, "tab": "Body" },
-      "body_hint_e": { "keys": ["e"], "description": "Edit / open type", "category": "Body", "visible": true, "tab": "Body" },
-      "body_hint_t": { "keys": ["t"], "description": "Toggle text/file", "category": "Body", "visible": true, "tab": "Body" },
-      "query_hint_arrows": { "keys": ["↑↓←→"], "description": "Navigate", "category": "Query", "visible": true, "tab": "Query" },
-      "query_hint_e": { "keys": ["e"], "description": "Edit cell", "category": "Query", "visible": true, "tab": "Query" },
-      "query_hint_space": { "keys": ["space"], "description": "Toggle", "category": "Query", "visible": true, "tab": "Query" },
-      "query_hint_d": { "keys": ["d"], "description": "Delete row", "category": "Query", "visible": true, "tab": "Query" },
-      "auth_hint_e": { "keys": ["e"], "description": "Edit field", "category": "Auth", "visible": true, "tab": "Auth" },
-      "auth_hint_lr": { "keys": ["←→"], "description": "Cycle type", "category": "Auth", "visible": true, "tab": "Auth" }
+      "insert_mode": {
+        "keys": [
+          "e"
+        ],
+        "description": "Edit cell",
+        "category": "Editor",
+        "visible": false
+      },
+      "normal_mode": {
+        "keys": [
+          "esc"
+        ],
+        "description": "Cancel edit",
+        "category": "Editor",
+        "visible": false
+      },
+      "next_tab": {
+        "keys": [
+          "]"
+        ],
+        "description": "Next tab",
+        "category": "Editor",
+        "visible": false
+      },
+      "prev_tab": {
+        "keys": [
+          "["
+        ],
+        "description": "Prev tab",
+        "category": "Editor",
+        "visible": false
+      },
+      "execute": {
+        "keys": [
+          "ctrl+e"
+        ],
+        "description": "Send request",
+        "category": "Editor",
+        "visible": true
+      },
+      "tab_1": {
+        "keys": [
+          "1"
+        ],
+        "description": "URL tab",
+        "category": "Editor Tabs",
+        "visible": false
+      },
+      "tab_2": {
+        "keys": [
+          "2"
+        ],
+        "description": "Headers tab",
+        "category": "Editor Tabs",
+        "visible": false
+      },
+      "tab_3": {
+        "keys": [
+          "3"
+        ],
+        "description": "Body tab",
+        "category": "Editor Tabs",
+        "visible": false
+      },
+      "tab_4": {
+        "keys": [
+          "4"
+        ],
+        "description": "Query tab",
+        "category": "Editor Tabs",
+        "visible": false
+      },
+      "tab_5": {
+        "keys": [
+          "5"
+        ],
+        "description": "Auth tab",
+        "category": "Editor Tabs",
+        "visible": false
+      },
+      "url_hint_arrows": {
+        "keys": [
+          "↑↓"
+        ],
+        "description": "Navigate rows",
+        "category": "URL",
+        "visible": true,
+        "tab": "URL"
+      },
+      "url_hint_lr": {
+        "keys": [
+          "←→"
+        ],
+        "description": "Cycle method",
+        "category": "URL",
+        "visible": true,
+        "tab": "URL"
+      },
+      "url_hint_e": {
+        "keys": [
+          "e"
+        ],
+        "description": "Edit URL",
+        "category": "URL",
+        "visible": true,
+        "tab": "URL"
+      },
+      "headers_hint_arrows": {
+        "keys": [
+          "↑↓←→"
+        ],
+        "description": "Navigate",
+        "category": "Headers",
+        "visible": true,
+        "tab": "Headers"
+      },
+      "headers_hint_e": {
+        "keys": [
+          "e"
+        ],
+        "description": "Edit cell",
+        "category": "Headers",
+        "visible": true,
+        "tab": "Headers"
+      },
+      "headers_hint_space": {
+        "keys": [
+          "space"
+        ],
+        "description": "Toggle",
+        "category": "Headers",
+        "visible": true,
+        "tab": "Headers"
+      },
+      "headers_hint_d": {
+        "keys": [
+          "d"
+        ],
+        "description": "Delete row",
+        "category": "Headers",
+        "visible": true,
+        "tab": "Headers"
+      },
+      "body_hint_arrows": {
+        "keys": [
+          "↑↓←→"
+        ],
+        "description": "Navigate",
+        "category": "Body",
+        "visible": true,
+        "tab": "Body"
+      },
+      "body_hint_e": {
+        "keys": [
+          "e"
+        ],
+        "description": "Edit / open type",
+        "category": "Body",
+        "visible": true,
+        "tab": "Body"
+      },
+      "body_hint_t": {
+        "keys": [
+          "t"
+        ],
+        "description": "Toggle text/file",
+        "category": "Body",
+        "visible": true,
+        "tab": "Body"
+      },
+      "query_hint_arrows": {
+        "keys": [
+          "↑↓←→"
+        ],
+        "description": "Navigate",
+        "category": "Query",
+        "visible": true,
+        "tab": "Query"
+      },
+      "query_hint_e": {
+        "keys": [
+          "e"
+        ],
+        "description": "Edit cell",
+        "category": "Query",
+        "visible": true,
+        "tab": "Query"
+      },
+      "query_hint_space": {
+        "keys": [
+          "space"
+        ],
+        "description": "Toggle",
+        "category": "Query",
+        "visible": true,
+        "tab": "Query"
+      },
+      "query_hint_d": {
+        "keys": [
+          "d"
+        ],
+        "description": "Delete row",
+        "category": "Query",
+        "visible": true,
+        "tab": "Query"
+      },
+      "auth_hint_e": {
+        "keys": [
+          "e"
+        ],
+        "description": "Edit field",
+        "category": "Auth",
+        "visible": true,
+        "tab": "Auth"
+      },
+      "auth_hint_lr": {
+        "keys": [
+          "←→"
+        ],
+        "description": "Cycle type",
+        "category": "Auth",
+        "visible": true,
+        "tab": "Auth"
+      },
+      "delete_row": {
+        "keys": [
+          "d"
+        ],
+        "description": "Delete row",
+        "category": "Editor",
+        "visible": false
+      },
+      "toggle_enabled": {
+        "keys": [
+          "space"
+        ],
+        "description": "Toggle enabled",
+        "category": "Editor",
+        "visible": false
+      },
+      "toggle_type": {
+        "keys": [
+          "t"
+        ],
+        "description": "Toggle type",
+        "category": "Editor",
+        "visible": false
+      }
     },
     "response": {
-      "copy_body": { "keys": ["y"], "description": "Copy response", "category": "Response", "visible": true },
-      "save_response": { "keys": ["s"], "description": "Save to file", "category": "Response", "visible": true, "tab": "Body" },
-      "scroll_up": { "keys": ["k", "up"], "description": "Scroll up", "category": "Response", "visible": true },
-      "scroll_down": { "keys": ["j", "down"], "description": "Scroll down", "category": "Response", "visible": true },
-      "half_page_down": { "keys": ["ctrl+d"], "description": "Half page down", "category": "Response", "visible": true },
-      "half_page_up": { "keys": ["ctrl+u"], "description": "Half page up", "category": "Response", "visible": true },
-      "page_down": { "keys": ["ctrl+f"], "description": "Page down", "category": "Response", "visible": false },
-      "page_up": { "keys": ["ctrl+b"], "description": "Page up", "category": "Response", "visible": false },
-      "scroll_top": { "keys": ["g"], "description": "Go to top", "category": "Response", "visible": true },
-      "scroll_bottom": { "keys": ["G"], "description": "Go to bottom", "category": "Response", "visible": true },
-      "next_tab": { "keys": ["]"], "description": "Next tab", "category": "Response", "visible": true },
-      "prev_tab": { "keys": ["["], "description": "Prev tab", "category": "Response", "visible": true },
-      "tab_1": { "keys": ["1"], "description": "Body tab", "category": "Response Tabs", "visible": false },
-      "tab_2": { "keys": ["2"], "description": "Headers tab", "category": "Response Tabs", "visible": false },
-      "tab_3": { "keys": ["3"], "description": "Info tab", "category": "Response Tabs", "visible": false }
+      "open_viewer": {
+        "keys": [
+          "v"
+        ],
+        "description": "Open vim viewer",
+        "category": "Response",
+        "visible": true
+      },
+      "copy_body": {
+        "keys": [
+          "y"
+        ],
+        "description": "Copy response",
+        "category": "Response",
+        "visible": true
+      },
+      "execute": {
+        "keys": [
+          "ctrl+e"
+        ],
+        "description": "Send request",
+        "category": "Response",
+        "visible": true
+      }
+    },
+    "cell_edit_modal": {
+      "confirm_exit": {
+        "keys": [
+          "enter",
+          "ctrl+s"
+        ],
+        "description": "Save and exit",
+        "category": "Cell Edit",
+        "visible": true
+      },
+      "save_only": {
+        "keys": [
+          "ctrl+d"
+        ],
+        "description": "Save only",
+        "category": "Cell Edit",
+        "visible": true
+      },
+      "cancel": {
+        "keys": [
+          "esc"
+        ],
+        "description": "Cancel",
+        "category": "Cell Edit",
+        "visible": true
+      },
+      "newline": {
+        "keys": [
+          "ctrl+j"
+        ],
+        "description": "New line",
+        "category": "Cell Edit",
+        "visible": true
+      }
+    },
+    "curl_import_modal": {
+      "import": {
+        "keys": [
+          "enter"
+        ],
+        "description": "Import",
+        "category": "cURL Import",
+        "visible": true
+      },
+      "paste": {
+        "keys": [
+          "ctrl+v"
+        ],
+        "description": "Paste",
+        "category": "cURL Import",
+        "visible": true
+      },
+      "cancel": {
+        "keys": [
+          "esc"
+        ],
+        "description": "Cancel",
+        "category": "cURL Import",
+        "visible": true
+      }
     }
   },
   "ui": {
