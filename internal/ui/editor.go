@@ -162,6 +162,12 @@ func (m *EditorModel) prevTab() {
 	}
 }
 
+func (m *EditorModel) JumpToTab(n int) {
+	if n >= 1 && n <= len(editorTabs) {
+		m.activeTab = editorTabs[n-1]
+	}
+}
+
 func (m *EditorModel) view(focused bool, theme config.ThemeConfig) string {
 	borderColor := theme.BlurBorder
 	if focused {
@@ -183,8 +189,9 @@ func (m *EditorModel) view(focused bool, theme config.ThemeConfig) string {
 
 func (m *EditorModel) renderTabs() string {
 	var parts []string
-	for _, t := range editorTabs {
+	for i, t := range editorTabs {
 		style := lipgloss.NewStyle().Padding(0, 1)
+		label := fmt.Sprintf("%d:%s", i+1, string(t))
 		if t == m.activeTab {
 			style = style.Bold(true).
 				Underline(true).
@@ -192,7 +199,7 @@ func (m *EditorModel) renderTabs() string {
 		} else {
 			style = style.Foreground(lipgloss.Color("#626262"))
 		}
-		parts = append(parts, style.Render(string(t)))
+		parts = append(parts, style.Render(label))
 	}
 	return strings.Join(parts, " ")
 }

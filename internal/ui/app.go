@@ -228,6 +228,49 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 	case "prev_panel":
 		a.prevPanel()
 
+	case "focus_panel_1":
+		a.focused = PanelRequestList
+
+	case "focus_panel_2":
+		a.focused = PanelEditor
+
+	case "focus_panel_3":
+		a.focused = PanelResponse
+
+	case "tab_1":
+		switch a.focused {
+		case PanelEditor:
+			a.editor.JumpToTab(1)
+		case PanelResponse:
+			a.response.JumpToTab(1)
+		}
+
+	case "tab_2":
+		switch a.focused {
+		case PanelEditor:
+			a.editor.JumpToTab(2)
+		case PanelResponse:
+			a.response.JumpToTab(2)
+		}
+
+	case "tab_3":
+		switch a.focused {
+		case PanelEditor:
+			a.editor.JumpToTab(3)
+		case PanelResponse:
+			a.response.JumpToTab(3)
+		}
+
+	case "tab_4":
+		if a.focused == PanelEditor {
+			a.editor.JumpToTab(4)
+		}
+
+	case "tab_5":
+		if a.focused == PanelEditor {
+			a.editor.JumpToTab(5)
+		}
+
 	case "new_request":
 		a.promptInput("Request name:", "New Request", func(name string) {
 			req := &models.Request{

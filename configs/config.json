@@ -19,7 +19,10 @@
       "page_down": { "keys": ["ctrl+d"], "description": "Page down", "category": "Navigation", "visible": true },
       "page_up": { "keys": ["ctrl+u"], "description": "Page up", "category": "Navigation", "visible": true },
       "goto_top": { "keys": ["g"], "description": "Go to top", "category": "Navigation", "visible": false },
-      "goto_bottom": { "keys": ["G"], "description": "Go to bottom", "category": "Navigation", "visible": false }
+      "goto_bottom": { "keys": ["G"], "description": "Go to bottom", "category": "Navigation", "visible": false },
+      "focus_panel_1": { "keys": ["1"], "description": "Requests panel", "category": "Panels", "visible": true },
+      "focus_panel_2": { "keys": ["2"], "description": "Editor panel", "category": "Panels", "visible": true },
+      "focus_panel_3": { "keys": ["3"], "description": "Response panel", "category": "Panels", "visible": true }
     },
     "request_list": {
       "new_request": { "keys": ["n"], "description": "New request", "category": "Requests", "visible": true },
@@ -33,14 +36,22 @@
       "normal_mode": { "keys": ["esc"], "description": "Normal mode", "category": "Editor", "visible": true },
       "next_tab": { "keys": ["tab"], "description": "Next tab", "category": "Editor", "visible": true },
       "prev_tab": { "keys": ["shift+tab"], "description": "Prev tab", "category": "Editor", "visible": true },
-      "execute": { "keys": ["ctrl+e"], "description": "Send request", "category": "Editor", "visible": true }
+      "execute": { "keys": ["ctrl+e"], "description": "Send request", "category": "Editor", "visible": true },
+      "tab_1": { "keys": ["1"], "description": "URL tab", "category": "Editor Tabs", "visible": true },
+      "tab_2": { "keys": ["2"], "description": "Headers tab", "category": "Editor Tabs", "visible": true },
+      "tab_3": { "keys": ["3"], "description": "Body tab", "category": "Editor Tabs", "visible": true },
+      "tab_4": { "keys": ["4"], "description": "Query tab", "category": "Editor Tabs", "visible": true },
+      "tab_5": { "keys": ["5"], "description": "Auth tab", "category": "Editor Tabs", "visible": true }
     },
     "response": {
       "copy_body": { "keys": ["y"], "description": "Copy body", "category": "Response", "visible": true },
       "save_response": { "keys": ["s"], "description": "Save to file", "category": "Response", "visible": true },
       "scroll_up": { "keys": ["k", "up"], "description": "Scroll up", "category": "Response", "visible": false },
       "scroll_down": { "keys": ["j", "down"], "description": "Scroll down", "category": "Response", "visible": false },
-      "next_tab": { "keys": ["tab"], "description": "Next tab", "category": "Response", "visible": true }
+      "next_tab": { "keys": ["tab"], "description": "Next tab", "category": "Response", "visible": true },
+      "tab_1": { "keys": ["1"], "description": "Body tab", "category": "Response Tabs", "visible": true },
+      "tab_2": { "keys": ["2"], "description": "Headers tab", "category": "Response Tabs", "visible": true },
+      "tab_3": { "keys": ["3"], "description": "Info tab", "category": "Response Tabs", "visible": true }
     }
   },
   "ui": {

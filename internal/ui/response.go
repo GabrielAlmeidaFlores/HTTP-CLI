@@ -68,6 +68,12 @@ func (m *ResponseModel) nextTab() {
 	}
 }
 
+func (m *ResponseModel) JumpToTab(n int) {
+	if n >= 1 && n <= len(responseTabs) {
+		m.activeTab = responseTabs[n-1]
+	}
+}
+
 func (m *ResponseModel) view(focused bool, theme config.ThemeConfig) string {
 	borderColor := theme.BlurBorder
 	if focused {
@@ -89,8 +95,9 @@ func (m *ResponseModel) view(focused bool, theme config.ThemeConfig) string {
 
 func (m *ResponseModel) renderTabs() string {
 	var parts []string
-	for _, t := range responseTabs {
+	for i, t := range responseTabs {
 		style := lipgloss.NewStyle().Padding(0, 1)
+		label := fmt.Sprintf("%d:%s", i+1, string(t))
 		if t == m.activeTab {
 			style = style.Bold(true).
 				Underline(true).
@@ -98,7 +105,7 @@ func (m *ResponseModel) renderTabs() string {
 		} else {
 			style = style.Foreground(lipgloss.Color("#626262"))
 		}
-		parts = append(parts, style.Render(string(t)))
+		parts = append(parts, style.Render(label))
 	}
 
 	statusStr := ""
