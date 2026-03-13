@@ -152,6 +152,19 @@ func (c *Client) Execute(ctx context.Context, req *models.Request, envVars map[s
 		}
 	}
 
+	remoteAddr := ""
+	if httpResp.Request != nil {
+		remoteAddr = httpResp.Request.RemoteAddr
+	}
+	if remoteAddr == "" && httpResp.TLS != nil {
+		remoteAddr = httpResp.Request.Host
+	}
+
+	proto := httpResp.Proto
+	if httpResp.TLS != nil && proto == "" {
+		proto = "HTTPS"
+	}
+
 	return &models.Response{
 		RequestID:  req.ID,
 		Status:     httpResp.StatusCode,
@@ -161,6 +174,8 @@ func (c *Client) Execute(ctx context.Context, req *models.Request, envVars map[s
 		Size:       int64(len(respBody)),
 		Duration:   duration,
 		Timestamp:  time.Now(),
+		RemoteAddr: remoteAddr,
+		Protocol:   proto,
 	}, nil
 }
 

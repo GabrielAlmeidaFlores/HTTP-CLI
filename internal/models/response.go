@@ -12,6 +12,8 @@ type Response struct {
 	Duration   time.Duration     `json:"duration"`
 	Timestamp  time.Time         `json:"timestamp"`
 	Error      string            `json:"error,omitempty"`
+	RemoteAddr string            `json:"remote_addr,omitempty"`
+	Protocol   string            `json:"protocol,omitempty"`
 }
 
 func (r *Response) IsSuccess() bool {

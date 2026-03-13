@@ -35,6 +35,10 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 		return a.handleEditorKey(msg)
 	}
 
+	if a.focused == PanelResponse {
+		return a.handleResponseKey(msg)
+	}
+
 	binding, found := a.keybindMgr.Resolve(key, string(a.focused))
 	if !found {
 		binding, found = a.keybindMgr.Resolve(key, "global")
@@ -45,6 +49,54 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 	}
 
 	return a.routeKeyToPanel(msg)
+}
+
+func (a *App) handleResponseKey(msg tea.KeyMsg) tea.Cmd {
+	key := msg.String()
+
+	if binding, ok := a.keybindMgr.Resolve(key, "response"); ok {
+		switch binding.Action {
+		case "next_tab":
+			a.response.NextTab()
+			return nil
+		case "prev_tab":
+			a.response.PrevTab()
+			return nil
+		case "scroll_down", "down":
+			a.response.ScrollDown()
+			return nil
+		case "scroll_up", "up":
+			a.response.ScrollUp()
+			return nil
+		default:
+			return a.executeAction(binding.Action, binding.Panel)
+		}
+	}
+
+	if binding, ok := a.keybindMgr.Resolve(key, "global"); ok {
+		return a.executeAction(binding.Action, binding.Panel)
+	}
+
+	switch key {
+	case "tab":
+		a.response.NextTab()
+	case "shift+tab":
+		a.response.PrevTab()
+	case "j", "down":
+		a.response.ScrollDown()
+	case "k", "up":
+		a.response.ScrollUp()
+	case "1":
+		a.response.activeTab = responseTabBody
+		a.response.scrollY = 0
+	case "2":
+		a.response.activeTab = responseTabHeaders
+		a.response.scrollY = 0
+	case "3":
+		a.response.activeTab = responseTabInfo
+		a.response.scrollY = 0
+	}
+	return nil
 }
 
 func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
