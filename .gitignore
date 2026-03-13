@@ -1,5 +1,5 @@
 # Binary outputs
-http-cli
+/http-cli
 bin/
 
 # Go build artifacts
