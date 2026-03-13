@@ -43,10 +43,27 @@ func ParseCurlCommand(curl string) (*models.Request, error) {
 					})
 				}
 			}
-		case token == "-d" || token == "--data" || token == "--data-raw":
+		case token == "-b" || token == "--cookie":
+			if i+1 < len(tokens) {
+				i++
+				req.Headers = append(req.Headers, models.Header{
+					Key:     "Cookie",
+					Value:   tokens[i],
+					Enabled: true,
+				})
+			}
+		case token == "-d" || token == "--data" || token == "--data-raw" || token == "--data-binary":
 			if i+1 < len(tokens) {
 				i++
 				req.Body = models.Body{Type: models.BodyRaw, Content: tokens[i]}
+				if req.Method == models.MethodGET {
+					req.Method = models.MethodPOST
+				}
+			}
+		case token == "--data-urlencode":
+			if i+1 < len(tokens) {
+				i++
+				req.Body = models.Body{Type: models.BodyURLEncoded, Content: tokens[i]}
 				if req.Method == models.MethodGET {
 					req.Method = models.MethodPOST
 				}
@@ -63,6 +80,18 @@ func ParseCurlCommand(curl string) (*models.Request, error) {
 					}
 				}
 			}
+		case token == "-A" || token == "--user-agent":
+			if i+1 < len(tokens) {
+				i++
+				req.Headers = append(req.Headers, models.Header{
+					Key:     "User-Agent",
+					Value:   tokens[i],
+					Enabled: true,
+				})
+			}
+		case token == "--compressed" || token == "-s" || token == "--silent" ||
+			token == "-L" || token == "--location" || token == "-k" || token == "--insecure" ||
+			token == "-v" || token == "--verbose" || token == "-i" || token == "--include":
 		case !strings.HasPrefix(token, "-"):
 			cleaned := strings.Trim(token, "'\"")
 			if _, err := url.ParseRequestURI(cleaned); err == nil {
@@ -88,6 +117,9 @@ func ParseCurlCommand(curl string) (*models.Request, error) {
 }
 
 func tokenize(s string) []string {
+	s = strings.ReplaceAll(s, "\\\n", " ")
+	s = strings.ReplaceAll(s, "\\\r\n", " ")
+
 	var tokens []string
 	var current strings.Builder
 	inSingle := false
@@ -99,7 +131,7 @@ func tokenize(s string) []string {
 			inSingle = !inSingle
 		case ch == '"' && !inSingle:
 			inDouble = !inDouble
-		case ch == ' ' && !inSingle && !inDouble:
+		case (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') && !inSingle && !inDouble:
 			if current.Len() > 0 {
 				tokens = append(tokens, current.String())
 				current.Reset()
