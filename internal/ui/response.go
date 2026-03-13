@@ -87,6 +87,22 @@ func (m *ResponseModel) ActiveTab() string {
 	return string(m.activeTab)
 }
 
+func (m *ResponseModel) contentWidth() int {
+	w := m.width - 4
+	if w < 1 {
+		w = 1
+	}
+	return w
+}
+
+func (m *ResponseModel) contentHeight() int {
+	h := m.height - 4
+	if h < 1 {
+		h = 1
+	}
+	return h
+}
+
 func (m *ResponseModel) view(focused bool, theme config.ThemeConfig) string {
 	borderColor := theme.BlurBorder
 	if focused {
@@ -94,13 +110,15 @@ func (m *ResponseModel) view(focused bool, theme config.ThemeConfig) string {
 	}
 
 	tabs := m.renderTabs()
-	content := m.renderContent(theme)
+	tabLines := len(strings.Split(tabs, "\n"))
+	content := m.renderContent(theme, tabLines)
 
-	inner := lipgloss.JoinVertical(lipgloss.Left, tabs, content)
+	inner := lipgloss.NewStyle().
+		Width(m.contentWidth()).
+		Height(m.contentHeight()).
+		Render(lipgloss.JoinVertical(lipgloss.Left, tabs, content))
 
 	return lipgloss.NewStyle().
-		Width(m.width).
-		Height(m.height).
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color(borderColor)).
 		Render(inner)
@@ -138,7 +156,12 @@ func (m *ResponseModel) renderTabs() string {
 	return strings.Join(parts, " ") + statusStr
 }
 
-func (m *ResponseModel) renderContent(theme config.ThemeConfig) string {
+func (m *ResponseModel) renderContent(theme config.ThemeConfig, usedLines int) string {
+	availableLines := m.contentHeight() - usedLines
+	if availableLines < 1 {
+		availableLines = 1
+	}
+
 	if m.response == nil {
 		return lipgloss.NewStyle().
 			Foreground(lipgloss.Color("240")).
@@ -153,38 +176,51 @@ func (m *ResponseModel) renderContent(theme config.ThemeConfig) string {
 
 	switch m.activeTab {
 	case RespTabBody:
-		return m.renderBody()
+		return m.renderBody(availableLines)
 	case RespTabHeaders:
-		return m.renderHeaders()
+		return m.renderHeaders(availableLines)
 	case RespTabInfo:
 		return m.renderInfo()
 	}
 	return ""
 }
 
-func (m *ResponseModel) renderBody() string {
+func (m *ResponseModel) renderBody(visible int) string {
 	body := m.FormattedBody()
+	cw := m.contentWidth()
 
 	lines := strings.Split(body, "\n")
-	visible := m.height - 4
-	if visible < 1 {
-		visible = 1
+	var clipped []string
+	for _, l := range lines {
+		if len(l) > cw {
+			clipped = append(clipped, l[:cw])
+		} else {
+			clipped = append(clipped, l)
+		}
 	}
 
 	start := m.scrollOffset
-	if start >= len(lines) {
-		start = len(lines) - 1
+	if start >= len(clipped) {
+		start = len(clipped) - 1
 	}
 	if start < 0 {
 		start = 0
 	}
 
 	end := start + visible
-	if end > len(lines) {
-		end = len(lines)
+	if end > len(clipped) {
+		end = len(clipped)
 	}
 
-	return strings.Join(lines[start:end], "\n")
+	scrollInfo := ""
+	if len(clipped) > visible {
+		scrollInfo = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#626262")).
+			Render(fmt.Sprintf(" (%d-%d/%d)", start+1, end, len(clipped)))
+	}
+	_ = scrollInfo
+
+	return strings.Join(clipped[start:end], "\n")
 }
 
 func (m *ResponseModel) FormattedBody() string {
@@ -201,15 +237,33 @@ func (m *ResponseModel) FormattedBody() string {
 	return body
 }
 
-func (m *ResponseModel) renderHeaders() string {
+func (m *ResponseModel) renderHeaders(visible int) string {
+	cw := m.contentWidth()
 	var lines []string
 	for k, v := range m.response.Headers {
 		key := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#87d7ff")).
 			Render(k)
-		lines = append(lines, key+": "+v)
+		line := key + ": " + v
+		if len(line) > cw {
+			line = line[:cw]
+		}
+		lines = append(lines, line)
 	}
-	return strings.Join(lines, "\n")
+
+	start := m.scrollOffset
+	if start >= len(lines) {
+		start = len(lines) - 1
+	}
+	if start < 0 {
+		start = 0
+	}
+	end := start + visible
+	if end > len(lines) {
+		end = len(lines)
+	}
+
+	return strings.Join(lines[start:end], "\n")
 }
 
 func (m *ResponseModel) renderInfo() string {
