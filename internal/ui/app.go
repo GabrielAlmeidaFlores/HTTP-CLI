@@ -461,6 +461,25 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		a.curlImportCursor = 0
 		a.showCurlImport = true
 
+	case "duplicate_request":
+		if a.selectedReq != nil {
+			src := a.selectedReq
+			dup := &models.Request{
+				Name:        src.Name + " (copy)",
+				Method:      src.Method,
+				URL:         src.URL,
+				Headers:     append([]models.Header{}, src.Headers...),
+				QueryParams: append([]models.QueryParam{}, src.QueryParams...),
+				Body:        src.Body,
+				Auth:        src.Auth,
+			}
+			_ = a.store.SaveRequest(context.Background(), dup)
+			a.requests = append(a.requests, dup)
+			a.requestList.setRequests(a.requests)
+			a.selectRequest(dup)
+			a.setStatus("Duplicated: " + dup.Name)
+		}
+
 	case "delete_request":
 		if a.selectedReq != nil {
 			req := a.selectedReq
