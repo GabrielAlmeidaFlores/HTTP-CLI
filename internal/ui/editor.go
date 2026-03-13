@@ -106,6 +106,14 @@ func (m *EditorModel) handleEditingKey(key string) tea.Cmd {
 	return nil
 }
 
+func (m *EditorModel) StartEditing() {
+	m.startEditing()
+}
+
+func (m *EditorModel) Reset() {
+	m.cancelEdit()
+}
+
 func (m *EditorModel) startEditing() {
 	if m.request == nil {
 		return

@@ -169,6 +169,7 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 	if a.mode == ModeInsert {
 		if key == "esc" {
 			a.mode = ModeNormal
+			a.editor.Reset()
 			return nil
 		}
 		return a.routeKeyToPanel(msg)
@@ -261,6 +262,9 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 
 	case "insert_mode":
 		a.mode = ModeInsert
+		if a.focused == PanelEditor {
+			a.editor.StartEditing()
+		}
 
 	case "down":
 		switch a.focused {
