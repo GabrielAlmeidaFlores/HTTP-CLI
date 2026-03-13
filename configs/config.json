@@ -51,6 +51,7 @@
       "headers_hint_d": { "keys": ["d"], "description": "Delete row", "category": "Headers", "visible": true, "tab": "Headers" },
       "body_hint_arrows": { "keys": ["↑↓←→"], "description": "Navigate", "category": "Body", "visible": true, "tab": "Body" },
       "body_hint_e": { "keys": ["e"], "description": "Edit / open type", "category": "Body", "visible": true, "tab": "Body" },
+      "body_hint_t": { "keys": ["t"], "description": "Toggle text/file", "category": "Body", "visible": true, "tab": "Body" },
       "query_hint_arrows": { "keys": ["↑↓←→"], "description": "Navigate", "category": "Query", "visible": true, "tab": "Query" },
       "query_hint_e": { "keys": ["e"], "description": "Edit cell", "category": "Query", "visible": true, "tab": "Query" },
       "query_hint_space": { "keys": ["space"], "description": "Toggle", "category": "Query", "visible": true, "tab": "Query" },
