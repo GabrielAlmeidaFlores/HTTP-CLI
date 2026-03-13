@@ -52,11 +52,12 @@ showConfirm   bool
 confirmMsg    string
 confirmAction func()
 
-showInput   bool
-inputTitle  string
-inputValue  string
-inputCursor int
-inputAction func(string)
+showInput        bool
+inputTitle       string
+inputValue       string
+inputCursor      int
+inputViewOffset  int
+inputAction      func(string)
 
 showCellEdit   bool
 cellEditTitle  string
@@ -231,13 +232,36 @@ return a.renderModal(a.confirmMsg + "\n\n[enter] Confirm  [n/esc] Cancel")
 
 if a.showInput {
 runes := []rune(a.inputValue)
+n := len(runes)
 cur := a.inputCursor
-before := string(runes[:cur])
-after := ""
-if cur < len(runes) {
-after = string(runes[cur:])
+modalW := a.width / 2
+if modalW < 40 {
+modalW = 40
 }
-display := before + "█" + after
+inputW := modalW - 8
+if inputW < 8 {
+inputW = 8
+}
+if cur < a.inputViewOffset {
+a.inputViewOffset = cur
+}
+if cur >= a.inputViewOffset+inputW-1 {
+a.inputViewOffset = cur - inputW + 2
+}
+viewStart := a.inputViewOffset
+viewEnd := viewStart + inputW - 1
+if viewEnd > n {
+viewEnd = n
+}
+if viewStart > n {
+viewStart = n
+}
+visibleBefore := runes[viewStart:cur]
+var visibleAfter []rune
+if cur < viewEnd {
+visibleAfter = runes[cur:viewEnd]
+}
+display := string(visibleBefore) + "█" + string(visibleAfter)
 return a.renderModal(a.inputTitle + "\n\n" + display + "\n\n[enter] Confirm  [esc] Cancel")
 }
 
