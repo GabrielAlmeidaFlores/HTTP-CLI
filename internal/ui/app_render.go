@@ -208,18 +208,10 @@ func (a *App) renderModalOverlay(content string, w int) string {
 }
 
 func (a *App) renderCellEditModal() string {
-	modalW := a.width * 3 / 4
-	if modalW > 100 {
-		modalW = 100
-	}
-	if modalW < 40 {
-		modalW = 40
-	}
+	modalW := modalWidth(a.width)
 	contentW := modalW - 6
 
-	titleStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#00d7ff"))
+	titleStyle := accentStyle().Bold(true)
 
 	runes := []rune(a.cellEditVal)
 	cursor := a.cellEditCursor
@@ -237,8 +229,8 @@ func (a *App) renderCellEditModal() string {
 		Background(lipgloss.Color("#1c1c2c")).
 		Foreground(lipgloss.Color("#ffffff"))
 
-	dimKey := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00d7ff"))
-	dimDesc := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+	dimKey := accentStyle().Bold(true)
+	dimDesc := dimStyle()
 
 	hintsRow := a.buildModalHints("cell_edit_modal", dimKey, dimDesc)
 
@@ -250,15 +242,7 @@ func (a *App) renderCellEditModal() string {
 		hintsRow,
 	)
 
-	modal := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#00d7ff")).
-		Padding(1, 2).
-		Width(modalW).
-		Render(body)
-
-	bg := a.renderBackground()
-	return overlayCenter(bg, modal, a.width, a.height)
+	return a.renderModalOverlay(body, modalW)
 }
 
 func (a *App) renderCurlImportModal() string {
@@ -271,8 +255,8 @@ func (a *App) renderCurlImportModal() string {
 	}
 	contentW := modalW - 6
 
-	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00d7ff"))
-	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+	titleStyle := accentStyle().Bold(true)
+	dim := dimStyle()
 
 	runes := []rune(a.curlImportVal)
 	cursor := a.curlImportCursor
@@ -290,12 +274,12 @@ func (a *App) renderCurlImportModal() string {
 		Background(lipgloss.Color("#1c1c2c")).
 		Foreground(lipgloss.Color("#ffffff"))
 
-	dimKey := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00d7ff"))
-	descStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+	dimKey := accentStyle().Bold(true)
+	descStyle := dimStyle()
 
 	hintsRow := a.buildModalHints("curl_import_modal", dimKey, descStyle)
 
-	example := dimStyle.Render("e.g. curl -X POST https://api.example.com -H 'Content-Type: application/json' -d '{\"key\":\"val\"}'")
+	example := dim.Render("e.g. curl -X POST https://api.example.com -H 'Content-Type: application/json' -d '{\"key\":\"val\"}'")
 
 	body := lipgloss.JoinVertical(lipgloss.Left,
 		titleStyle.Render("Import from cURL"),
@@ -307,15 +291,7 @@ func (a *App) renderCurlImportModal() string {
 		hintsRow,
 	)
 
-	modal := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#00d7ff")).
-		Padding(1, 2).
-		Width(modalW).
-		Render(body)
-
-	bg := a.renderBackground()
-	return overlayCenter(bg, modal, a.width, a.height)
+	return a.renderModalOverlay(body, modalW)
 }
 
 func (a *App) renderNotificationModal() string {
@@ -329,30 +305,14 @@ func (a *App) renderNotificationModal() string {
 		Foreground(lipgloss.Color(borderColor)).
 		Bold(true).
 		Render(icon+" "+a.notificationMsg) + "\n\n" +
-		lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render("Press any key to continue")
+		dimStyle().Render("Press any key to continue")
 
-	modal := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(borderColor)).
+	modal := modalBorderStyle(borderColor).
 		Padding(1, 3).
 		Render(content)
 
 	bg := a.renderBackground()
 	return overlayCenter(bg, modal, a.width, a.height)
-}
-
-func (a *App) methodColor(method string) string {
-	colors := map[string]string{
-		"GET":    a.cfg.UI.Theme.MethodGet,
-		"POST":   a.cfg.UI.Theme.MethodPost,
-		"PUT":    a.cfg.UI.Theme.MethodPut,
-		"DELETE": a.cfg.UI.Theme.MethodDelete,
-		"PATCH":  a.cfg.UI.Theme.MethodPatch,
-	}
-	if c, ok := colors[method]; ok && c != "" {
-		return c
-	}
-	return "#ffffff"
 }
 
 func (a *App) buildModalHints(panel string, keyStyle, descStyle lipgloss.Style) string {

@@ -4,6 +4,7 @@ import (
 "fmt"
 "strings"
 
+"github.com/atotto/clipboard"
 tea "github.com/charmbracelet/bubbletea"
 "github.com/charmbracelet/lipgloss"
 
@@ -332,6 +333,11 @@ case "right":
 if m.urlCursor < len([]rune(m.urlEditVal)) {
 m.urlCursor++
 }
+case "ctrl+v":
+text, err := clipboard.ReadAll()
+if err == nil {
+m.urlEditVal, m.urlCursor = insertAtCursor(m.urlEditVal, m.urlCursor, text)
+}
 default:
 if isPrintable(key) {
 runes := []rune(m.urlEditVal)
@@ -431,6 +437,11 @@ m.bodyCursor--
 case "right":
 if m.bodyCursor < len([]rune(m.bodyEditVal)) {
 m.bodyCursor++
+}
+case "ctrl+v":
+text, err := clipboard.ReadAll()
+if err == nil {
+m.bodyEditVal, m.bodyCursor = insertAtCursor(m.bodyEditVal, m.bodyCursor, text)
 }
 default:
 if isPrintable(key) {
@@ -573,6 +584,11 @@ m.authCursor--
 case "right":
 if m.authCursor < len([]rune(m.authEditVal)) {
 m.authCursor++
+}
+case "ctrl+v":
+text, err := clipboard.ReadAll()
+if err == nil {
+m.authEditVal, m.authCursor = insertAtCursor(m.authEditVal, m.authCursor, text)
 }
 default:
 if isPrintable(key) {
@@ -763,18 +779,12 @@ m.syncToRequest()
 }
 
 func (m *EditorModel) view(focused bool, theme config.ThemeConfig) string {
-borderColor := theme.BlurBorder
-if focused {
-borderColor = theme.FocusBorder
-}
 tabs := m.renderTabs()
 content := m.renderTabContent(focused)
 inner := lipgloss.JoinVertical(lipgloss.Left, tabs, content)
-return lipgloss.NewStyle().
+return panelBorderStyle(focused, theme).
 Width(m.width).
 Height(m.height).
-Border(lipgloss.RoundedBorder()).
-BorderForeground(lipgloss.Color(borderColor)).
 Render(inner)
 }
 
@@ -981,7 +991,6 @@ return strings.Repeat("*", len(s))
 }
 return s[:4] + strings.Repeat("*", len(s)-8) + s[len(s)-4:]
 }
-
 
 
 func (m *EditorModel) CurrentEditValue() string {

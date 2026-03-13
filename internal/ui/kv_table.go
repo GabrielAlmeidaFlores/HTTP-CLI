@@ -3,6 +3,7 @@ package ui
 import (
 	"strings"
 
+	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/user/http-cli/internal/models"
 	"github.com/user/http-cli/internal/ui/keybindings"
@@ -119,6 +120,12 @@ func (t *kvTable) handleEditKey(key string) bool {
 	case "right":
 		if t.editCursor < len([]rune(t.editVal)) {
 			t.editCursor++
+		}
+		return true
+	case "ctrl+v":
+		text, err := clipboard.ReadAll()
+		if err == nil {
+			t.editVal, t.editCursor = insertAtCursor(t.editVal, t.editCursor, text)
 		}
 		return true
 	default:
@@ -250,6 +257,7 @@ func (t *kvTable) render(width int, insertMode bool) string {
 	rowBg := lipgloss.NewStyle().Background(lipgloss.Color("#1c1c2c"))
 	cellBg := lipgloss.NewStyle().Background(lipgloss.Color("#005f87")).Bold(true)
 	placeholder := lipgloss.NewStyle().Foreground(lipgloss.Color("#444444"))
+	ptrStyle := accentStyle()
 
 	typeColW := 0
 	if t.showFileType {
@@ -310,12 +318,11 @@ func (t *kvTable) render(width int, insertMode bool) string {
 				typeStr = textTag.Render(padRight("text", typeColW))
 			}
 			if isCurrentRow && t.colIdx == 3 {
-				typeStr = cellBg.Width(typeColW).Render(padRight(func() string {
-					if r.isFile {
-						return "FILE"
-					}
-					return "text"
-				}(), typeColW))
+				label := "text"
+				if r.isFile {
+					label = "FILE"
+				}
+				typeStr = cellBg.Width(typeColW).Render(padRight(label, typeColW))
 			}
 		}
 
@@ -343,7 +350,7 @@ func (t *kvTable) render(width int, insertMode bool) string {
 
 		ptr := "  "
 		if isCurrentRow && insertMode {
-			ptr = lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff")).Render("> ")
+			ptr = ptrStyle.Render("> ")
 		}
 
 		line := ptr + enStr + "  " + keyCell + " " + typeStr + valCell

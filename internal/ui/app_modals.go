@@ -20,6 +20,7 @@ func (a *App) promptInput(title, defaultVal string, action func(string)) {
 	a.showInput = true
 	a.inputTitle = title
 	a.inputValue = defaultVal
+	a.inputCursor = len([]rune(defaultVal))
 	a.inputAction = action
 }
 
@@ -43,7 +44,11 @@ func (a *App) handleConfirmInput(msg tea.KeyMsg) tea.Cmd {
 }
 
 func (a *App) handleInputDialog(msg tea.KeyMsg) tea.Cmd {
-	switch msg.String() {
+	key := msg.String()
+	runes := []rune(a.inputValue)
+	n := len(runes)
+
+	switch key {
 	case "enter":
 		a.showInput = false
 		if a.inputAction != nil {
@@ -52,13 +57,30 @@ func (a *App) handleInputDialog(msg tea.KeyMsg) tea.Cmd {
 	case "esc":
 		a.showInput = false
 	case "backspace":
-		if len(a.inputValue) > 0 {
-			runes := []rune(a.inputValue)
-			a.inputValue = string(runes[:len(runes)-1])
+		if a.inputCursor > 0 {
+			a.inputValue = string(runes[:a.inputCursor-1]) + string(runes[a.inputCursor:])
+			a.inputCursor--
+		}
+	case "left":
+		if a.inputCursor > 0 {
+			a.inputCursor--
+		}
+	case "right":
+		if a.inputCursor < n {
+			a.inputCursor++
+		}
+	case "home", "ctrl+a":
+		a.inputCursor = 0
+	case "end":
+		a.inputCursor = n
+	case "ctrl+v":
+		text, err := clipboard.ReadAll()
+		if err == nil {
+			a.inputValue, a.inputCursor = insertAtCursor(a.inputValue, a.inputCursor, text)
 		}
 	default:
-		if len(msg.String()) == 1 {
-			a.inputValue += msg.String()
+		if len(key) == 1 {
+			a.inputValue, a.inputCursor = insertAtCursor(a.inputValue, a.inputCursor, key)
 		}
 	}
 	return nil
@@ -128,6 +150,11 @@ func (a *App) handleCellEditModal(msg tea.KeyMsg) tea.Cmd {
 		a.cellEditCursor = 0
 	case "end", "ctrl+e":
 		a.cellEditCursor = n
+	case "ctrl+v":
+		text, err := clipboard.ReadAll()
+		if err == nil {
+			a.cellEditVal, a.cellEditCursor = insertAtCursor(a.cellEditVal, a.cellEditCursor, text)
+		}
 	default:
 		r := []rune(key)
 		if len(r) == 1 && r[0] >= 32 && r[0] != 127 {
@@ -217,15 +244,13 @@ return a.openExternalEditorWithSource(initialContent, "cell_edit")
 }
 
 func (a *App) openExternalEditorWithSource(initialContent, source string) tea.Cmd {
-editorCmd := a.cfg.ExternalEditor
+editorCmd := os.ExpandEnv(a.cfg.ExternalEditor)
 if editorCmd == "" {
 editorCmd = os.Getenv("EDITOR")
 }
 if editorCmd == "" {
 editorCmd = "vi"
 }
-
-editorCmd = os.ExpandEnv(editorCmd)
 
 tmp, err := os.CreateTemp("", "http-cli-*.txt")
 if err != nil {
@@ -237,6 +262,9 @@ _, _ = tmp.WriteString(initialContent)
 _ = tmp.Close()
 
 parts := strings.Fields(editorCmd)
+if len(parts) == 0 {
+parts = []string{"vi"}
+}
 args := append(parts[1:], tmpPath)
 cmd := exec.Command(parts[0], args...)
 
