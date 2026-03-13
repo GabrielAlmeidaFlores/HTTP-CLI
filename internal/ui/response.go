@@ -154,13 +154,7 @@ func (m *ResponseModel) renderContent(theme config.ThemeConfig) string {
 }
 
 func (m *ResponseModel) renderBody() string {
-	body := m.response.Body
-
-	if strings.Contains(m.response.ContentType(), "json") {
-		if pretty, err := prettyJSON(body); err == nil {
-			body = pretty
-		}
-	}
+	body := m.FormattedBody()
 
 	lines := strings.Split(body, "\n")
 	visible := m.height - 4
@@ -182,6 +176,20 @@ func (m *ResponseModel) renderBody() string {
 	}
 
 	return strings.Join(lines[start:end], "\n")
+}
+
+func (m *ResponseModel) FormattedBody() string {
+	if m.response == nil {
+		return ""
+	}
+	body := m.response.Body
+	ct := m.response.ContentType()
+	if strings.Contains(ct, "json") {
+		if pretty, err := prettyJSON(body); err == nil {
+			return pretty
+		}
+	}
+	return body
 }
 
 func (m *ResponseModel) renderHeaders() string {

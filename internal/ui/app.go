@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -330,6 +331,16 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 
 	case "page_up":
 		a.response.scrollUp(10)
+
+	case "copy_body":
+		body := a.response.FormattedBody()
+		if body == "" {
+			a.setStatus("Nothing to copy")
+		} else if err := clipboard.WriteAll(body); err != nil {
+			a.setStatus("Copy failed: " + err.Error())
+		} else {
+			a.setStatus("Copied to clipboard ✓")
+		}
 
 	case "save":
 		if a.selectedReq != nil {

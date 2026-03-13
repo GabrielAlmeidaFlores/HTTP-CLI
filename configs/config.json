@@ -49,7 +49,7 @@
       "auth_hint": { "keys": ["i"], "description": "Edit auth", "category": "Auth", "visible": true, "tab": "Auth" }
     },
     "response": {
-      "copy_body": { "keys": ["y"], "description": "Copy body", "category": "Response", "visible": true, "tab": "Body" },
+      "copy_body": { "keys": ["y"], "description": "Copy response", "category": "Response", "visible": true },
       "save_response": { "keys": ["s"], "description": "Save to file", "category": "Response", "visible": true, "tab": "Body" },
       "scroll_up": { "keys": ["k", "up"], "description": "Scroll up", "category": "Response", "visible": true },
       "scroll_down": { "keys": ["j", "down"], "description": "Scroll down", "category": "Response", "visible": true },
