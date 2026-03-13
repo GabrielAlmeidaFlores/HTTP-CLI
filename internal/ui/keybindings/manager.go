@@ -113,12 +113,20 @@ func (m *Manager) GetHints(panel, activeTab string) []Binding {
 		if !b.Visible {
 			continue
 		}
-		if !matchesPanel(b, panel) {
-			continue
+
+		if activeTab != "" {
+			if b.Panel != panel {
+				continue
+			}
+			if b.Tab != "" && b.Tab != activeTab {
+				continue
+			}
+		} else {
+			if !matchesPanel(b, panel) {
+				continue
+			}
 		}
-		if b.Tab != "" && b.Tab != activeTab {
-			continue
-		}
+
 		key := b.Action + b.Panel
 		if seen[key] {
 			continue
