@@ -76,6 +76,10 @@ type App struct {
 	curlImportVal    string
 	curlImportCursor int
 
+	showNotification   bool
+	notificationMsg    string
+	notificationIsErr  bool
+
 	executing bool
 	err       error
 }
@@ -151,6 +155,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if a.showCurlImport {
 			cmds = append(cmds, a.handleCurlImportModal(msg))
+			break
+		}
+		if a.showNotification {
+			a.showNotification = false
 			break
 		}
 		cmds = append(cmds, a.handleKey(msg))
@@ -542,10 +550,22 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		}
 
 	case "page_down":
-		a.response.scrollDown(10)
+		a.response.fullPageDown()
 
 	case "page_up":
-		a.response.scrollUp(10)
+		a.response.fullPageUp()
+
+	case "half_page_down":
+		a.response.halfPageDown()
+
+	case "half_page_up":
+		a.response.halfPageUp()
+
+	case "scroll_top":
+		a.response.scrollToTop()
+
+	case "scroll_bottom":
+		a.response.scrollToBottom()
 
 	case "copy_body":
 		body := a.response.FormattedBody()
@@ -699,6 +719,10 @@ func (a *App) View() string {
 
 	if a.showCurlImport {
 		return a.renderCurlImportModal()
+	}
+
+	if a.showNotification {
+		return a.renderNotificationModal()
 	}
 	topBar := a.renderTopBar()
 	mainArea := a.renderMainArea()
@@ -937,8 +961,8 @@ func (a *App) handleCurlImportModal(msg tea.KeyMsg) tea.Cmd {
 	case "enter":
 		req, err := transport.ParseCurlCommand(a.curlImportVal)
 		if err != nil {
-			a.setStatus("Import error: " + err.Error())
 			a.showCurlImport = false
+			a.showNotify("Import failed: "+err.Error(), true)
 			return nil
 		}
 		_ = a.store.SaveRequest(context.Background(), req)
@@ -946,8 +970,8 @@ func (a *App) handleCurlImportModal(msg tea.KeyMsg) tea.Cmd {
 		a.requestList.setRequests(a.requests)
 		a.selectRequest(req)
 		a.showCurlImport = false
-		a.setStatus("Imported: " + req.Name)
-		return a.loadRequests()
+		a.showNotify("Imported: "+req.Name, false)
+		return nil
 	case "ctrl+v":
 		text, err := clipboard.ReadAll()
 		if err == nil {
@@ -1061,6 +1085,34 @@ func (a *App) renderModal(content string) string {
 	modal := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#00d7ff")).
+		Padding(1, 3).
+		Render(content)
+
+	return lipgloss.Place(a.width, a.height, lipgloss.Center, lipgloss.Center, modal)
+}
+
+func (a *App) showNotify(msg string, isErr bool) {
+	a.notificationMsg = msg
+	a.notificationIsErr = isErr
+	a.showNotification = true
+}
+
+func (a *App) renderNotificationModal() string {
+	icon := "✓"
+	borderColor := "#00d700"
+	if a.notificationIsErr {
+		icon = "✗"
+		borderColor = "#d70000"
+	}
+	content := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(borderColor)).
+		Bold(true).
+		Render(icon+" "+a.notificationMsg) + "\n\n" +
+		lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render("Press any key to continue")
+
+	modal := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color(borderColor)).
 		Padding(1, 3).
 		Render(content)
 

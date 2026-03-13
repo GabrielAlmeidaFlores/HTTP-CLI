@@ -48,8 +48,25 @@ func (m *ResponseModel) setSize(w, h int) {
 	m.height = h
 }
 
+func (m *ResponseModel) totalLines() int {
+	switch m.activeTab {
+	case RespTabBody:
+		return len(strings.Split(m.FormattedBody(), "\n"))
+	case RespTabHeaders:
+		if m.response == nil {
+			return 0
+		}
+		return len(m.response.Headers)
+	}
+	return 0
+}
+
 func (m *ResponseModel) scrollDown(n int) {
 	m.scrollOffset += n
+	max := m.totalLines() - m.contentHeight() + 2
+	if max > 0 && m.scrollOffset > max {
+		m.scrollOffset = max
+	}
 }
 
 func (m *ResponseModel) scrollUp(n int) {
@@ -57,6 +74,34 @@ func (m *ResponseModel) scrollUp(n int) {
 	if m.scrollOffset < 0 {
 		m.scrollOffset = 0
 	}
+}
+
+func (m *ResponseModel) scrollToTop() {
+	m.scrollOffset = 0
+}
+
+func (m *ResponseModel) scrollToBottom() {
+	max := m.totalLines() - m.contentHeight() + 2
+	if max < 0 {
+		max = 0
+	}
+	m.scrollOffset = max
+}
+
+func (m *ResponseModel) halfPageDown() {
+	m.scrollDown(m.contentHeight() / 2)
+}
+
+func (m *ResponseModel) halfPageUp() {
+	m.scrollUp(m.contentHeight() / 2)
+}
+
+func (m *ResponseModel) fullPageDown() {
+	m.scrollDown(m.contentHeight())
+}
+
+func (m *ResponseModel) fullPageUp() {
+	m.scrollUp(m.contentHeight())
 }
 
 func (m *ResponseModel) nextTab() {
@@ -153,7 +198,19 @@ func (m *ResponseModel) renderTabs() string {
 			Render(fmt.Sprintf(" %d", m.response.Status))
 	}
 
-	return strings.Join(parts, " ") + statusStr
+	scrollStr := ""
+	if m.response != nil && m.scrollOffset > 0 {
+		total := m.totalLines()
+		pct := 0
+		if total > 0 {
+			pct = (m.scrollOffset * 100) / total
+		}
+		scrollStr = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#626262")).
+			Render(fmt.Sprintf("  %d%%", pct))
+	}
+
+	return strings.Join(parts, " ") + statusStr + scrollStr
 }
 
 func (m *ResponseModel) renderContent(theme config.ThemeConfig, usedLines int) string {
