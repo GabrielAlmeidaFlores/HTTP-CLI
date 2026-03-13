@@ -13,6 +13,7 @@ type KeybindingEntry struct {
 	Description string   `json:"description"`
 	Category    string   `json:"category"`
 	Visible     bool     `json:"visible"`
+	Tab         string   `json:"tab,omitempty"`
 }
 
 type HintsConfig struct {

@@ -168,6 +168,10 @@ func (m *EditorModel) JumpToTab(n int) {
 	}
 }
 
+func (m *EditorModel) ActiveTab() string {
+	return string(m.activeTab)
+}
+
 func (m *EditorModel) view(focused bool, theme config.ThemeConfig) string {
 	borderColor := theme.BlurBorder
 	if focused {

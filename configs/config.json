@@ -32,26 +32,31 @@
       "select_request": { "keys": ["enter"], "description": "Open request", "category": "Requests", "visible": true }
     },
     "editor": {
-      "insert_mode": { "keys": ["i"], "description": "Edit mode", "category": "Editor", "visible": true },
-      "normal_mode": { "keys": ["esc"], "description": "Normal mode", "category": "Editor", "visible": true },
+      "insert_mode": { "keys": ["i"], "description": "Edit", "category": "Editor", "visible": true },
+      "normal_mode": { "keys": ["esc"], "description": "Normal mode", "category": "Editor", "visible": false },
       "next_tab": { "keys": ["tab"], "description": "Next tab", "category": "Editor", "visible": true },
       "prev_tab": { "keys": ["shift+tab"], "description": "Prev tab", "category": "Editor", "visible": true },
       "execute": { "keys": ["ctrl+e"], "description": "Send request", "category": "Editor", "visible": true },
-      "tab_1": { "keys": ["1"], "description": "URL tab", "category": "Editor Tabs", "visible": true },
-      "tab_2": { "keys": ["2"], "description": "Headers tab", "category": "Editor Tabs", "visible": true },
-      "tab_3": { "keys": ["3"], "description": "Body tab", "category": "Editor Tabs", "visible": true },
-      "tab_4": { "keys": ["4"], "description": "Query tab", "category": "Editor Tabs", "visible": true },
-      "tab_5": { "keys": ["5"], "description": "Auth tab", "category": "Editor Tabs", "visible": true }
+      "tab_1": { "keys": ["1"], "description": "URL tab", "category": "Editor Tabs", "visible": false },
+      "tab_2": { "keys": ["2"], "description": "Headers tab", "category": "Editor Tabs", "visible": false },
+      "tab_3": { "keys": ["3"], "description": "Body tab", "category": "Editor Tabs", "visible": false },
+      "tab_4": { "keys": ["4"], "description": "Query tab", "category": "Editor Tabs", "visible": false },
+      "tab_5": { "keys": ["5"], "description": "Auth tab", "category": "Editor Tabs", "visible": false },
+      "url_hint": { "keys": ["i"], "description": "Edit URL", "category": "URL", "visible": true, "tab": "URL" },
+      "headers_hint": { "keys": ["i"], "description": "Add/edit header", "category": "Headers", "visible": true, "tab": "Headers" },
+      "body_hint": { "keys": ["i"], "description": "Edit body", "category": "Body", "visible": true, "tab": "Body" },
+      "query_hint": { "keys": ["i"], "description": "Add/edit param", "category": "Query", "visible": true, "tab": "Query" },
+      "auth_hint": { "keys": ["i"], "description": "Edit auth", "category": "Auth", "visible": true, "tab": "Auth" }
     },
     "response": {
-      "copy_body": { "keys": ["y"], "description": "Copy body", "category": "Response", "visible": true },
-      "save_response": { "keys": ["s"], "description": "Save to file", "category": "Response", "visible": true },
-      "scroll_up": { "keys": ["k", "up"], "description": "Scroll up", "category": "Response", "visible": false },
-      "scroll_down": { "keys": ["j", "down"], "description": "Scroll down", "category": "Response", "visible": false },
+      "copy_body": { "keys": ["y"], "description": "Copy body", "category": "Response", "visible": true, "tab": "Body" },
+      "save_response": { "keys": ["s"], "description": "Save to file", "category": "Response", "visible": true, "tab": "Body" },
+      "scroll_up": { "keys": ["k", "up"], "description": "Scroll up", "category": "Response", "visible": true },
+      "scroll_down": { "keys": ["j", "down"], "description": "Scroll down", "category": "Response", "visible": true },
       "next_tab": { "keys": ["tab"], "description": "Next tab", "category": "Response", "visible": true },
-      "tab_1": { "keys": ["1"], "description": "Body tab", "category": "Response Tabs", "visible": true },
-      "tab_2": { "keys": ["2"], "description": "Headers tab", "category": "Response Tabs", "visible": true },
-      "tab_3": { "keys": ["3"], "description": "Info tab", "category": "Response Tabs", "visible": true }
+      "tab_1": { "keys": ["1"], "description": "Body tab", "category": "Response Tabs", "visible": false },
+      "tab_2": { "keys": ["2"], "description": "Headers tab", "category": "Response Tabs", "visible": false },
+      "tab_3": { "keys": ["3"], "description": "Info tab", "category": "Response Tabs", "visible": false }
     }
   },
   "ui": {

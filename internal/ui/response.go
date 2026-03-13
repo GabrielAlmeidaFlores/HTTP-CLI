@@ -74,6 +74,10 @@ func (m *ResponseModel) JumpToTab(n int) {
 	}
 }
 
+func (m *ResponseModel) ActiveTab() string {
+	return string(m.activeTab)
+}
+
 func (m *ResponseModel) view(focused bool, theme config.ThemeConfig) string {
 	borderColor := theme.BlurBorder
 	if focused {

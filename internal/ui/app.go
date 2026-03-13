@@ -579,7 +579,15 @@ func (a *App) renderHints() string {
 		return ""
 	}
 
-	hints := a.keybindMgr.GetHints(string(a.focused))
+	activeTab := ""
+	switch a.focused {
+	case PanelEditor:
+		activeTab = a.editor.ActiveTab()
+	case PanelResponse:
+		activeTab = a.response.ActiveTab()
+	}
+
+	hints := a.keybindMgr.GetHints(string(a.focused), activeTab)
 
 	keyStyle := lipgloss.NewStyle().
 		Bold(true).

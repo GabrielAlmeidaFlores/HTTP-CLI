@@ -14,6 +14,7 @@ type Binding struct {
 	Description string
 	Category    string
 	Panel       string
+	Tab         string
 	Visible     bool
 	Priority    int
 }
@@ -57,6 +58,7 @@ func (m *Manager) loadFromConfig(cfg *config.Config) {
 				Description: entry.Description,
 				Category:    entry.Category,
 				Panel:       panel,
+				Tab:         entry.Tab,
 				Visible:     entry.Visible,
 				Priority:    priority,
 			}
@@ -100,7 +102,7 @@ func (m *Manager) Resolve(key, panel string) (Binding, bool) {
 	return Binding{}, false
 }
 
-func (m *Manager) GetHints(panel string) []Binding {
+func (m *Manager) GetHints(panel, activeTab string) []Binding {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -112,6 +114,9 @@ func (m *Manager) GetHints(panel string) []Binding {
 			continue
 		}
 		if !matchesPanel(b, panel) {
+			continue
+		}
+		if b.Tab != "" && b.Tab != activeTab {
 			continue
 		}
 		key := b.Action + b.Panel
