@@ -194,8 +194,13 @@ func (a *App) renderBackground() string {
 }
 
 func (a *App) renderModal(content string) string {
+	w := a.width / 2
+	if w < 40 {
+		w = 40
+	}
 	modal := modalBorderStyle(a.theme.Primary).
 		Padding(1, 3).
+		Width(w).
 		Render(content)
 
 	bg := a.renderBackground()

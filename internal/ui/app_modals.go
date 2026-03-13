@@ -21,6 +21,7 @@ func (a *App) promptInput(title, defaultVal string, action func(string)) {
 	a.inputTitle = title
 	a.inputValue = defaultVal
 	a.inputCursor = len([]rune(defaultVal))
+	a.inputViewOffset = 0
 	a.inputAction = action
 }
 
