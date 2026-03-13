@@ -1,0 +1,91 @@
+{
+  "version": "1.0.0",
+  "keybindings": {
+    "global": {
+      "exit": { "keys": ["q", "ctrl+c"], "description": "Quit application", "category": "Global", "visible": true },
+      "save": { "keys": ["ctrl+s"], "description": "Save current state", "category": "Global", "visible": true },
+      "execute_request": { "keys": ["ctrl+e"], "description": "Execute request", "category": "Global", "visible": true },
+      "search": { "keys": ["/"], "description": "Search", "category": "Global", "visible": true },
+      "cancel": { "keys": ["esc"], "description": "Cancel / back", "category": "Global", "visible": true },
+      "help": { "keys": ["?"], "description": "Show help", "category": "Global", "visible": false },
+      "next_panel": { "keys": ["tab"], "description": "Next panel", "category": "Navigation", "visible": true },
+      "prev_panel": { "keys": ["shift+tab"], "description": "Prev panel", "category": "Navigation", "visible": true }
+    },
+    "navigation": {
+      "down": { "keys": ["j", "down"], "description": "Move down", "category": "Navigation", "visible": true },
+      "up": { "keys": ["k", "up"], "description": "Move up", "category": "Navigation", "visible": true },
+      "left": { "keys": ["h", "left"], "description": "Move left", "category": "Navigation", "visible": false },
+      "right": { "keys": ["l", "right"], "description": "Move right", "category": "Navigation", "visible": false },
+      "page_down": { "keys": ["ctrl+d"], "description": "Page down", "category": "Navigation", "visible": true },
+      "page_up": { "keys": ["ctrl+u"], "description": "Page up", "category": "Navigation", "visible": true },
+      "goto_top": { "keys": ["g"], "description": "Go to top", "category": "Navigation", "visible": false },
+      "goto_bottom": { "keys": ["G"], "description": "Go to bottom", "category": "Navigation", "visible": false }
+    },
+    "request_list": {
+      "new_request": { "keys": ["n"], "description": "New request", "category": "Requests", "visible": true },
+      "delete_request": { "keys": ["d"], "description": "Delete request", "category": "Requests", "visible": true },
+      "duplicate_request": { "keys": ["y"], "description": "Duplicate", "category": "Requests", "visible": true },
+      "rename_request": { "keys": ["r"], "description": "Rename", "category": "Requests", "visible": true },
+      "select_request": { "keys": ["enter"], "description": "Open request", "category": "Requests", "visible": true }
+    },
+    "editor": {
+      "insert_mode": { "keys": ["i"], "description": "Edit mode", "category": "Editor", "visible": true },
+      "normal_mode": { "keys": ["esc"], "description": "Normal mode", "category": "Editor", "visible": true },
+      "next_tab": { "keys": ["tab"], "description": "Next tab", "category": "Editor", "visible": true },
+      "prev_tab": { "keys": ["shift+tab"], "description": "Prev tab", "category": "Editor", "visible": true },
+      "execute": { "keys": ["ctrl+e"], "description": "Send request", "category": "Editor", "visible": true }
+    },
+    "response": {
+      "copy_body": { "keys": ["y"], "description": "Copy body", "category": "Response", "visible": true },
+      "save_response": { "keys": ["s"], "description": "Save to file", "category": "Response", "visible": true },
+      "scroll_up": { "keys": ["k", "up"], "description": "Scroll up", "category": "Response", "visible": false },
+      "scroll_down": { "keys": ["j", "down"], "description": "Scroll down", "category": "Response", "visible": false },
+      "next_tab": { "keys": ["tab"], "description": "Next tab", "category": "Response", "visible": true }
+    }
+  },
+  "ui": {
+    "hints": {
+      "enabled": true,
+      "position": "bottom",
+      "height": 2,
+      "show_descriptions": true,
+      "highlight_keys": true,
+      "key_color": "cyan",
+      "description_color": "245",
+      "separator": "  "
+    },
+    "layout": {
+      "left_panel_width_ratio": 0.25,
+      "border_style": "rounded",
+      "show_status_bar": true
+    },
+    "theme": {
+      "primary": "#00d7ff",
+      "secondary": "#87d7ff",
+      "success": "#00d700",
+      "error": "#d70000",
+      "warning": "#d7d700",
+      "focus_border": "#00d7ff",
+      "blur_border": "#626262",
+      "method_get": "#00d700",
+      "method_post": "#d7d700",
+      "method_put": "#d75f00",
+      "method_delete": "#d70000",
+      "method_patch": "#00d7af"
+    }
+  },
+  "request_defaults": {
+    "timeout_seconds": 30,
+    "follow_redirects": true,
+    "verify_ssl": true,
+    "user_agent": "httpctl/1.0"
+  },
+  "storage": {
+    "history_limit": 100,
+    "auto_save": true
+  },
+  "debug": {
+    "log_level": "info",
+    "verbose": false
+  }
+}

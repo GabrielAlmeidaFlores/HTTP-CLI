@@ -1,0 +1,47 @@
+# Binary outputs
+httpctl
+bin/
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# Module cache
+vendor/
+
+# Test & coverage
+coverage.out
+coverage.html
+*.coverprofile
+/testdata/
+
+# IDE & editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# User config (should not be versioned)
+configs/user.json
