@@ -179,7 +179,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		}
 
 	case "open_viewer":
-		if a.response.response != nil {
+		if a.response.GetResponse() != nil {
 			a.showVimViewer = true
 			a.vimViewerOffset = 0
 		}

@@ -444,6 +444,14 @@
         "description": "Toggle type",
         "category": "Editor",
         "visible": false
+      },
+      "open_external_editor": {
+        "keys": [
+          "ctrl+o"
+        ],
+        "description": "Open in external editor",
+        "category": "Editor",
+        "visible": true
       }
     },
     "response": {

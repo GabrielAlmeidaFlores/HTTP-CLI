@@ -50,6 +50,10 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 	key := msg.String()
 
+	if key == "ctrl+o" && a.editor.IsSubEditing() {
+		return a.openExternalEditorWithSource(a.editor.CurrentEditValue(), "editor")
+	}
+
 	if binding, ok := a.keybindMgr.Resolve(key, "editor"); ok {
 		switch binding.Action {
 		case "next_panel":

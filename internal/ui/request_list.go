@@ -96,11 +96,6 @@ func (m *RequestListModel) ensureVisible() {
 }
 
 func (m *RequestListModel) view(focused bool, theme config.ThemeConfig) string {
-	borderColor := theme.BlurBorder
-	if focused {
-		borderColor = theme.FocusBorder
-	}
-
 	title := "Requests"
 	if m.filter != "" {
 		title = fmt.Sprintf("Requests [/%s]", m.filter)
@@ -132,28 +127,15 @@ func (m *RequestListModel) view(focused bool, theme config.ThemeConfig) string {
 
 	content := strings.Join(lines, "\n")
 
-	return lipgloss.NewStyle().
+	return panelBorderStyle(focused, theme).
 		Width(m.width).
 		Height(m.height).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color(borderColor)).
 		Padding(0, 1).
 		Render(title + "\n" + content)
 }
 
 func (m *RequestListModel) renderLine(req *models.Request, selected bool, theme config.ThemeConfig) string {
-	methodColors := map[string]string{
-		"GET":    theme.MethodGet,
-		"POST":   theme.MethodPost,
-		"PUT":    theme.MethodPut,
-		"DELETE": theme.MethodDelete,
-		"PATCH":  theme.MethodPatch,
-	}
-
-	color := methodColors[string(req.Method)]
-	if color == "" {
-		color = "#ffffff"
-	}
+	color := methodColor(string(req.Method), theme)
 
 	methodStr := lipgloss.NewStyle().
 		Bold(true).

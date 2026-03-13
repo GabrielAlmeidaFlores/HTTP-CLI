@@ -180,17 +180,11 @@ func (a *App) renderVimViewer() string {
 		Render(" NORMAL ")
 
 	info := ""
-	if a.response.response != nil {
-		statusColor := "#00d700"
-		if a.response.response.IsClientError() {
-			statusColor = "#d7d700"
-		} else if a.response.response.IsServerError() {
-			statusColor = "#d70000"
-		}
+	if a.response.GetResponse() != nil {
 		info = lipgloss.NewStyle().
-			Foreground(lipgloss.Color(statusColor)).
+			Foreground(lipgloss.Color(a.response.StatusColor(a.cfg.UI.Theme))).
 			Bold(true).
-			Render(fmt.Sprintf(" %d ", a.response.response.Status))
+			Render(fmt.Sprintf(" %d ", a.response.GetResponse().Status))
 	}
 
 	pos := lipgloss.NewStyle().

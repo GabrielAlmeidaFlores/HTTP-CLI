@@ -20,7 +20,7 @@ func (a *App) renderTopBar() string {
 	methodStyle := lipgloss.NewStyle().
 		Bold(true).
 		Padding(0, 1).
-		Foreground(lipgloss.Color(a.methodColor(method)))
+		Foreground(lipgloss.Color(methodColor(method, a.cfg.UI.Theme)))
 
 	urlStyle := lipgloss.NewStyle().
 		Padding(0, 1).
@@ -36,7 +36,17 @@ func (a *App) renderTopBar() string {
 	if a.executing {
 		executing = " ..."
 	}
-	sendLabel := "Send [ctrl+e]" + executing
+
+	execKey := "ctrl+e"
+	for _, h := range a.keybindMgr.GetHints("editor", "") {
+		if h.Action == "execute" || h.Action == "execute_request" {
+			if len(h.Keys) > 0 {
+				execKey = h.Keys[0]
+			}
+			break
+		}
+	}
+	sendLabel := fmt.Sprintf("Send [%s]", execKey) + executing
 
 	bar := lipgloss.JoinHorizontal(lipgloss.Top,
 		methodStyle.Render(fmt.Sprintf("[%s]", method)),
@@ -184,14 +194,17 @@ func (a *App) renderBackground() string {
 }
 
 func (a *App) renderModal(content string) string {
-	modal := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#00d7ff")).
+	modal := modalBorderStyle("#00d7ff").
 		Padding(1, 3).
 		Render(content)
 
 	bg := a.renderBackground()
 	return overlayCenter(bg, modal, a.width, a.height)
+}
+
+func (a *App) renderModalOverlay(content string, w int) string {
+	modal := modalBorderStyle("#00d7ff").Padding(1, 2).Width(w).Render(content)
+	return overlayCenter(a.renderBackground(), modal, a.width, a.height)
 }
 
 func (a *App) renderCellEditModal() string {

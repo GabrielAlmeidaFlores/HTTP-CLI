@@ -213,6 +213,10 @@ func (a *App) handleCurlImportModal(msg tea.KeyMsg) tea.Cmd {
 }
 
 func (a *App) openExternalEditor(initialContent string) tea.Cmd {
+return a.openExternalEditorWithSource(initialContent, "cell_edit")
+}
+
+func (a *App) openExternalEditorWithSource(initialContent, source string) tea.Cmd {
 editorCmd := a.cfg.ExternalEditor
 if editorCmd == "" {
 editorCmd = os.Getenv("EDITOR")
@@ -245,6 +249,6 @@ data, readErr := os.ReadFile(tmpPath)
 if readErr != nil {
 return StatusMsg{Text: "Could not read temp file: " + readErr.Error()}
 }
-return externalEditorDoneMsg{content: string(data)}
+return externalEditorDoneMsg{content: string(data), source: source}
 })
 }

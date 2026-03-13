@@ -90,7 +90,10 @@ type RequestsLoadedMsg struct{ Requests []*models.Request }
 type ResponseReceivedMsg struct{ Response *models.Response }
 type ErrorMsg struct{ Err error }
 type StatusMsg struct{ Text string }
-type externalEditorDoneMsg struct{ content string }
+type externalEditorDoneMsg struct {
+content string
+source  string
+}
 
 func NewApp(cfg *config.Config, store RequestStore, httpClient HTTPExecutor, parseCurl func(string) (*models.Request, error)) *App {
 km := keybindings.NewManager(cfg)
@@ -192,14 +195,23 @@ case StatusMsg:
 	a.setStatus(msg.Text)
 
 case externalEditorDoneMsg:
-	if a.cellEditCommit != nil {
-		a.cellEditCommit(msg.content)
-		a.showCellEdit = false
-		if a.selectedReq != nil {
-			_ = a.store.SaveRequest(context.Background(), a.selectedReq)
-			a.setStatus("Saved")
+		switch msg.source {
+		case "cell_edit":
+			if a.cellEditCommit != nil {
+				a.cellEditCommit(msg.content)
+				a.showCellEdit = false
+				if a.selectedReq != nil {
+					_ = a.store.SaveRequest(context.Background(), a.selectedReq)
+					a.setStatus("Saved")
+				}
+			}
+		case "editor":
+			a.editor.CommitExternalEdit(msg.content)
+			if a.selectedReq != nil {
+				_ = a.store.SaveRequest(context.Background(), a.selectedReq)
+				a.setStatus("Saved")
+			}
 		}
-	}
 }
 
 return a, tea.Batch(cmds...)
@@ -215,8 +227,15 @@ return a.renderModal(a.confirmMsg + "\n\n[enter] Confirm  [n/esc] Cancel")
 }
 
 if a.showInput {
-cursor := "_"
-return a.renderModal(a.inputTitle + "\n\n" + a.inputValue + cursor + "\n\n[enter] Confirm  [esc] Cancel")
+runes := []rune(a.inputValue)
+cur := a.inputCursor
+before := string(runes[:cur])
+after := ""
+if cur < len(runes) {
+after = string(runes[cur:])
+}
+display := before + "█" + after
+return a.renderModal(a.inputTitle + "\n\n" + display + "\n\n[enter] Confirm  [esc] Cancel")
 }
 
 if a.showCellEdit {

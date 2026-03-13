@@ -983,3 +983,75 @@ return s[:4] + strings.Repeat("*", len(s)-8) + s[len(s)-4:]
 }
 
 
+
+func (m *EditorModel) CurrentEditValue() string {
+switch m.activeTab {
+case TabURL:
+if m.urlEditing {
+return m.urlEditVal
+}
+case TabBody:
+if m.bodyEditing {
+return m.bodyEditVal
+}
+if m.bodyFormTable.isSubEditing() {
+return m.bodyFormTable.editVal
+}
+case TabHeaders:
+if m.headersTable.isSubEditing() {
+return m.headersTable.editVal
+}
+case TabQuery:
+if m.queryTable.isSubEditing() {
+return m.queryTable.editVal
+}
+case TabAuth:
+if m.authEditing {
+return m.authEditVal
+}
+}
+return ""
+}
+
+func (m *EditorModel) CommitExternalEdit(val string) {
+switch m.activeTab {
+case TabURL:
+if m.urlEditing {
+m.urlEditVal = val
+m.urlEditing = false
+m.urlCursor = len([]rune(val))
+if m.request != nil {
+m.request.URL = val
+}
+}
+case TabBody:
+if m.bodyEditing {
+m.bodyEditVal = val
+m.bodyEditing = false
+m.bodyCursor = len([]rune(val))
+if m.request != nil {
+m.request.Body.Content = val
+}
+} else if m.bodyFormTable.isSubEditing() {
+m.bodyFormTable.editVal = val
+m.bodyFormTable.commitEdit(false)
+}
+case TabHeaders:
+if m.headersTable.isSubEditing() {
+m.headersTable.editVal = val
+m.headersTable.commitEdit(false)
+}
+case TabQuery:
+if m.queryTable.isSubEditing() {
+m.queryTable.editVal = val
+m.queryTable.commitEdit(false)
+}
+case TabAuth:
+if m.authEditing {
+m.authEditVal = val
+m.authEditing = false
+m.authCursor = len([]rune(val))
+}
+}
+m.syncToRequest()
+}
