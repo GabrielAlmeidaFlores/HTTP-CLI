@@ -621,6 +621,127 @@ func (m *EditorModel) ActiveTab() string {
 return string(m.activeTab)
 }
 
+func (m *EditorModel) CurrentCellIsText() bool {
+switch m.activeTab {
+case TabURL:
+return m.urlRowIdx == 1
+case TabHeaders:
+return m.headersTable.colIdx != 0
+case TabBody:
+if m.bodyRowIdx == 0 {
+return false
+}
+bt := models.BodyType(m.bodyTypeSel.value())
+if bt == models.BodyNone {
+return false
+}
+if bt == models.BodyRaw || bt == models.BodyJSON {
+return true
+}
+return m.bodyFormTable.colIdx != 0
+case TabQuery:
+return m.queryTable.colIdx != 0
+case TabAuth:
+return m.authRowIdx > 0
+}
+return false
+}
+
+func (m *EditorModel) CurrentCellTitle() string {
+switch m.activeTab {
+case TabURL:
+return "URL"
+case TabHeaders:
+if m.headersTable.colIdx == 1 {
+return "Header · Key"
+}
+return "Header · Value"
+case TabBody:
+bt := models.BodyType(m.bodyTypeSel.value())
+if bt == models.BodyRaw || bt == models.BodyJSON {
+return "Body Content"
+}
+if m.bodyFormTable.colIdx == 1 {
+return "Form · Key"
+}
+return "Form · Value"
+case TabQuery:
+if m.queryTable.colIdx == 1 {
+return "Query · Key"
+}
+return "Query · Value"
+case TabAuth:
+fields := m.authFieldNames()
+idx := m.authRowIdx - 1
+if idx >= 0 && idx < len(fields) {
+return "Auth · " + fields[idx]
+}
+return "Auth"
+}
+return "Edit"
+}
+
+func (m *EditorModel) CurrentCellValue() string {
+switch m.activeTab {
+case TabURL:
+return m.urlEditVal
+case TabHeaders:
+return m.headersTable.currentCellVal()
+case TabBody:
+bt := models.BodyType(m.bodyTypeSel.value())
+if bt == models.BodyRaw || bt == models.BodyJSON {
+return m.bodyEditVal
+}
+return m.bodyFormTable.currentCellVal()
+case TabQuery:
+return m.queryTable.currentCellVal()
+case TabAuth:
+if m.authRowIdx > 0 {
+return m.getAuthFieldValue(m.authRowIdx - 1)
+}
+}
+return ""
+}
+
+func (m *EditorModel) CommitCellValue(val string) {
+switch m.activeTab {
+case TabURL:
+m.urlEditVal = val
+case TabHeaders:
+if m.headersTable.rowIdx < len(m.headersTable.rows) {
+if m.headersTable.colIdx == 1 {
+m.headersTable.rows[m.headersTable.rowIdx].key = val
+} else {
+m.headersTable.rows[m.headersTable.rowIdx].value = val
+}
+}
+case TabBody:
+bt := models.BodyType(m.bodyTypeSel.value())
+if bt == models.BodyRaw || bt == models.BodyJSON {
+m.bodyEditVal = val
+} else if m.bodyFormTable.rowIdx < len(m.bodyFormTable.rows) {
+if m.bodyFormTable.colIdx == 1 {
+m.bodyFormTable.rows[m.bodyFormTable.rowIdx].key = val
+} else {
+m.bodyFormTable.rows[m.bodyFormTable.rowIdx].value = val
+}
+}
+case TabQuery:
+if m.queryTable.rowIdx < len(m.queryTable.rows) {
+if m.queryTable.colIdx == 1 {
+m.queryTable.rows[m.queryTable.rowIdx].key = val
+} else {
+m.queryTable.rows[m.queryTable.rowIdx].value = val
+}
+}
+case TabAuth:
+if m.authRowIdx > 0 {
+m.setAuthFieldValue(m.authRowIdx-1, val)
+}
+}
+m.syncToRequest()
+}
+
 func (m *EditorModel) view(focused bool, theme config.ThemeConfig) string {
 borderColor := theme.BlurBorder
 if focused {

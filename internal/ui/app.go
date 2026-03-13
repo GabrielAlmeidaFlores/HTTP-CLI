@@ -66,6 +66,12 @@ type App struct {
 	inputValue  string
 	inputAction func(string)
 
+	showCellEdit   bool
+	cellEditTitle  string
+	cellEditVal    string
+	cellEditCursor int
+	cellEditCommit func(string)
+
 	executing bool
 	err       error
 }
@@ -133,6 +139,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if a.showInput {
 			cmds = append(cmds, a.handleInputDialog(msg))
+			break
+		}
+		if a.showCellEdit {
+			cmds = append(cmds, a.handleCellEditModal(msg))
 			break
 		}
 		cmds = append(cmds, a.handleKey(msg))
@@ -255,10 +265,92 @@ func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 		case "5":
 			a.editor.JumpToTab(5)
 			return nil
+		case "e":
+			if a.editor.CurrentCellIsText() {
+				a.openCellEdit()
+				return nil
+			}
 		}
 	}
 
 	return a.editor.handleKey(msg, a.selectedReq)
+}
+
+func (a *App) openCellEdit() {
+	a.cellEditTitle = a.editor.CurrentCellTitle()
+	a.cellEditVal = a.editor.CurrentCellValue()
+	a.cellEditCursor = len([]rune(a.cellEditVal))
+	a.cellEditCommit = func(val string) {
+		a.editor.CommitCellValue(val)
+	}
+	a.showCellEdit = true
+}
+
+func (a *App) handleCellEditModal(msg tea.KeyMsg) tea.Cmd {
+	key := msg.String()
+	runes := []rune(a.cellEditVal)
+	n := len(runes)
+
+	switch key {
+	case "ctrl+s", "enter":
+		if a.cellEditCommit != nil {
+			a.cellEditCommit(a.cellEditVal)
+		}
+		a.showCellEdit = false
+		if a.selectedReq != nil {
+			_ = a.store.SaveRequest(context.Background(), a.selectedReq)
+			a.setStatus("Saved")
+		}
+	case "ctrl+d":
+		if a.cellEditCommit != nil {
+			a.cellEditCommit(a.cellEditVal)
+		}
+		if a.selectedReq != nil {
+			_ = a.store.SaveRequest(context.Background(), a.selectedReq)
+			a.setStatus("Saved")
+		}
+	case "esc":
+		a.showCellEdit = false
+	case "ctrl+j":
+		newRunes := make([]rune, n+1)
+		copy(newRunes, runes[:a.cellEditCursor])
+		newRunes[a.cellEditCursor] = '\n'
+		copy(newRunes[a.cellEditCursor+1:], runes[a.cellEditCursor:])
+		a.cellEditVal = string(newRunes)
+		a.cellEditCursor++
+	case "backspace":
+		if a.cellEditCursor > 0 {
+			a.cellEditVal = string(runes[:a.cellEditCursor-1]) + string(runes[a.cellEditCursor:])
+			a.cellEditCursor--
+		}
+	case "delete":
+		if a.cellEditCursor < n {
+			a.cellEditVal = string(runes[:a.cellEditCursor]) + string(runes[a.cellEditCursor+1:])
+		}
+	case "left":
+		if a.cellEditCursor > 0 {
+			a.cellEditCursor--
+		}
+	case "right":
+		if a.cellEditCursor < n {
+			a.cellEditCursor++
+		}
+	case "home", "ctrl+a":
+		a.cellEditCursor = 0
+	case "end", "ctrl+e":
+		a.cellEditCursor = n
+	default:
+		r := []rune(key)
+		if len(r) == 1 && r[0] >= 32 && r[0] != 127 {
+			newRunes := make([]rune, n+1)
+			copy(newRunes, runes[:a.cellEditCursor])
+			newRunes[a.cellEditCursor] = r[0]
+			copy(newRunes[a.cellEditCursor+1:], runes[a.cellEditCursor:])
+			a.cellEditVal = string(newRunes)
+			a.cellEditCursor++
+		}
+	}
+	return nil
 }
 
 func (a *App) executeAction(action, _ string) tea.Cmd {
@@ -556,6 +648,10 @@ func (a *App) View() string {
 		return a.renderModal(a.inputTitle + "\n\n" + a.inputValue + cursor + "\n\n[enter] Confirm  [esc] Cancel")
 	}
 
+	if a.showCellEdit {
+		return a.renderCellEditModal()
+	}
+
 	topBar := a.renderTopBar()
 	mainArea := a.renderMainArea()
 	statusBar := a.renderStatusBar()
@@ -717,6 +813,71 @@ func (a *App) renderHints() string {
 		Background(lipgloss.Color("#121212")).
 		Foreground(lipgloss.Color("#626262")).
 		Render(hintsText)
+}
+
+func (a *App) renderCellEditModal() string {
+	modalW := a.width * 3 / 4
+	if modalW > 100 {
+		modalW = 100
+	}
+	if modalW < 40 {
+		modalW = 40
+	}
+	contentW := modalW - 6
+
+	titleStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#00d7ff"))
+
+	runes := []rune(a.cellEditVal)
+	cursor := a.cellEditCursor
+	before := string(runes[:cursor])
+	after := ""
+	if cursor < len(runes) {
+		after = string(runes[cursor:])
+	}
+	textContent := before + "█" + after
+
+	textAreaStyle := lipgloss.NewStyle().
+		Width(contentW).
+		Height(8).
+		Padding(1, 1).
+		Background(lipgloss.Color("#1c1c2c")).
+		Foreground(lipgloss.Color("#ffffff"))
+
+	dimKey := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#00d7ff"))
+	dimDesc := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+
+	hints := lipgloss.JoinHorizontal(lipgloss.Top,
+		dimKey.Render("enter")+" "+dimDesc.Render("save & exit"),
+		"   ",
+		dimKey.Render("ctrl+d")+" "+dimDesc.Render("save"),
+		"   ",
+		dimKey.Render("esc")+" "+dimDesc.Render("cancel"),
+		"   ",
+		dimKey.Render("ctrl+j")+" "+dimDesc.Render("newline"),
+	)
+
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render(a.cellEditTitle),
+		"",
+		textAreaStyle.Render(textContent),
+		"",
+		hints,
+	)
+
+	modal := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#00d7ff")).
+		Padding(1, 2).
+		Width(modalW).
+		Render(body)
+
+	return lipgloss.Place(a.width, a.height,
+		lipgloss.Center, lipgloss.Center,
+		modal,
+		lipgloss.WithWhitespaceBackground(lipgloss.Color("#000000")),
+	)
 }
 
 func (a *App) renderModal(content string) string {
