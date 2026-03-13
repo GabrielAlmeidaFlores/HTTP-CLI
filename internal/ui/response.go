@@ -137,14 +137,17 @@ Padding(0, 1)
 inactive := lipgloss.NewStyle().
 Foreground(lipgloss.Color("#626262")).
 Padding(0, 1)
+numStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#444444"))
 sep := lipgloss.NewStyle().Foreground(lipgloss.Color("#333333")).Render("│")
 
 var parts []string
 for i, name := range responseTabs {
+num := numStyle.Render(fmt.Sprintf("%d:", i+1))
+label := fmt.Sprintf("%s%s", num, name)
 if responseTab(i) == m.activeTab {
-parts = append(parts, active.Render(name))
+parts = append(parts, active.Render(label))
 } else {
-parts = append(parts, inactive.Render(name))
+parts = append(parts, inactive.Render(label))
 }
 if i < len(responseTabs)-1 {
 parts = append(parts, sep)
