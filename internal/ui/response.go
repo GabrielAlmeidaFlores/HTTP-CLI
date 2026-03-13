@@ -32,6 +32,23 @@ m.width = w
 m.height = h
 }
 
+func (m *ResponseModel) GetResponse() *models.Response {
+return m.response
+}
+
+func (m *ResponseModel) StatusColor(theme config.ThemeConfig) string {
+if m.response == nil {
+return theme.Success
+}
+if m.response.IsClientError() {
+return theme.Warning
+}
+if m.response.IsServerError() {
+return theme.Error
+}
+return theme.Success
+}
+
 func (m *ResponseModel) ActiveTab() string {
 return ""
 }
@@ -67,19 +84,13 @@ return body
 }
 
 func (m *ResponseModel) view(focused bool, theme config.ThemeConfig) string {
-borderColor := theme.BlurBorder
-if focused {
-borderColor = theme.FocusBorder
-}
-
 inner := lipgloss.NewStyle().
 Width(m.contentWidth()).
 Height(m.contentHeight()).
 Render(m.renderContent(theme))
 
-return lipgloss.NewStyle().
-Border(lipgloss.RoundedBorder()).
-BorderForeground(lipgloss.Color(borderColor)).
+return panelBorderStyle(focused, theme).
+Padding(0, 1).
 Render(inner)
 }
 
@@ -91,22 +102,14 @@ Render("No response yet\n\nPress ctrl+e to execute the request")
 }
 
 if m.response.Error != "" {
-return lipgloss.NewStyle().
-Foreground(lipgloss.Color(theme.Error)).
+return errorStyle().
 Render("Error: " + m.response.Error)
 }
 
-statusColor := theme.Success
-if m.response.IsClientError() {
-statusColor = theme.Warning
-} else if m.response.IsServerError() {
-statusColor = theme.Error
-}
-
-statusLine := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(statusColor)).
+statusLine := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(m.StatusColor(theme))).
 Render(fmt.Sprintf("%d %s", m.response.Status, m.response.StatusText))
 
-meta := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).
+meta := dimStyle().
 Render(fmt.Sprintf("  %dms  %s", m.response.Duration.Milliseconds(), formatSize(m.response.Size)))
 
 header := statusLine + meta
@@ -158,17 +161,3 @@ return string(data), nil
 func (m *ResponseModel) totalLines() int {
 return len(strings.Split(m.FormattedBody(), "\n"))
 }
-
-func (m *ResponseModel) scrollDown(_ int)  {}
-func (m *ResponseModel) scrollUp(_ int)    {}
-func (m *ResponseModel) scrollToTop()      {}
-func (m *ResponseModel) scrollToBottom()   {}
-func (m *ResponseModel) halfPageDown()     {}
-func (m *ResponseModel) halfPageUp()       {}
-func (m *ResponseModel) fullPageDown()     {}
-func (m *ResponseModel) fullPageUp()       {}
-func (m *ResponseModel) nextTab()          {}
-func (m *ResponseModel) prevTab()          {}
-func (m *ResponseModel) JumpToTab(_ int)   {}
-
-var _ = models.Request{}

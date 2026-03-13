@@ -61,6 +61,7 @@ confirmAction func()
 showInput   bool
 inputTitle  string
 inputValue  string
+inputCursor int
 inputAction func(string)
 
 showCellEdit   bool

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/user/http-cli/internal/ui/keybindings"
 )
 
@@ -182,46 +181,6 @@ func (a *App) renderBackground() string {
 	statusBar := a.renderStatusBar()
 	hints := a.renderHints()
 	return lipgloss.JoinVertical(lipgloss.Left, topBar, mainArea, statusBar, hints)
-}
-
-func overlayCenter(bg, fg string, w, h int) string {
-	bgLines := strings.Split(bg, "\n")
-	fgLines := strings.Split(fg, "\n")
-
-	fgH := len(fgLines)
-	fgW := 0
-	for _, l := range fgLines {
-		if vw := lipgloss.Width(l); vw > fgW {
-			fgW = vw
-		}
-	}
-
-	startY := (h - fgH) / 2
-	startX := (w - fgW) / 2
-	if startY < 0 {
-		startY = 0
-	}
-	if startX < 0 {
-		startX = 0
-	}
-
-	out := make([]string, len(bgLines))
-	for i, bgLine := range bgLines {
-		fgI := i - startY
-		if fgI < 0 || fgI >= fgH {
-			out[i] = bgLine
-			continue
-		}
-		bgLineW := lipgloss.Width(bgLine)
-		needed := startX + fgW
-		if bgLineW < needed {
-			bgLine += strings.Repeat(" ", needed-bgLineW)
-		}
-		left := ansi.Truncate(bgLine, startX, "")
-		right := ansi.TruncateLeft(bgLine, startX+fgW, "")
-		out[i] = left + fgLines[fgI] + right
-	}
-	return strings.Join(out, "\n")
 }
 
 func (a *App) renderModal(content string) string {
