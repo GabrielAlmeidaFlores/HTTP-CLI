@@ -141,6 +141,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case RequestsLoadedMsg:
 		a.requests = msg.Requests
 		a.requestList.setRequests(msg.Requests)
+		if a.selectedReq == nil && len(msg.Requests) > 0 {
+			a.selectRequest(msg.Requests[0])
+		}
 
 	case ResponseReceivedMsg:
 		a.executing = false
@@ -323,7 +326,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 	case "insert_mode":
 		a.mode = ModeInsert
 		if a.focused == PanelEditor {
-			a.editor.StartEditing()
+			a.editor.StartEditing(a.selectedReq)
 		}
 
 	case "down":

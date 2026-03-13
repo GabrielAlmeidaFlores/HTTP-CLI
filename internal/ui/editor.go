@@ -106,7 +106,10 @@ func (m *EditorModel) handleEditingKey(key string) tea.Cmd {
 	return nil
 }
 
-func (m *EditorModel) StartEditing() {
+func (m *EditorModel) StartEditing(req *models.Request) {
+	if req != nil {
+		m.request = req
+	}
 	m.startEditing()
 }
 
@@ -122,6 +125,22 @@ func (m *EditorModel) startEditing() {
 	case TabURL:
 		m.editingField = "url"
 		m.fieldValue = m.request.URL
+		m.cursorPos = len([]rune(m.fieldValue))
+	case TabBody:
+		m.editingField = "body"
+		m.fieldValue = m.request.Body.Content
+		m.cursorPos = len([]rune(m.fieldValue))
+	case TabHeaders:
+		m.editingField = "header_key"
+		m.fieldValue = ""
+		m.cursorPos = 0
+	case TabQuery:
+		m.editingField = "query_key"
+		m.fieldValue = ""
+		m.cursorPos = 0
+	case TabAuth:
+		m.editingField = "auth_token"
+		m.fieldValue = m.request.Auth.Token
 		m.cursorPos = len([]rune(m.fieldValue))
 	}
 }
@@ -140,6 +159,32 @@ func (m *EditorModel) commitEdit() {
 	switch m.editingField {
 	case "url":
 		m.request.URL = m.fieldValue
+	case "body":
+		m.request.Body.Content = m.fieldValue
+		if m.request.Body.Type == models.BodyNone {
+			m.request.Body.Type = models.BodyRaw
+		}
+	case "header_key":
+		if m.fieldValue != "" {
+			m.request.Headers = append(m.request.Headers, models.Header{
+				Key:     m.fieldValue,
+				Value:   "",
+				Enabled: true,
+			})
+		}
+	case "query_key":
+		if m.fieldValue != "" {
+			m.request.QueryParams = append(m.request.QueryParams, models.QueryParam{
+				Key:     m.fieldValue,
+				Value:   "",
+				Enabled: true,
+			})
+		}
+	case "auth_token":
+		m.request.Auth.Token = m.fieldValue
+		if m.request.Auth.Type == models.AuthNone {
+			m.request.Auth.Type = models.AuthBearer
+		}
 	}
 	m.cancelEdit()
 }
@@ -271,6 +316,18 @@ func (m *EditorModel) renderURLTab() string {
 }
 
 func (m *EditorModel) renderHeadersTab() string {
+	if m.editingField == "header_key" {
+		runes := []rune(m.fieldValue)
+		before := string(runes[:m.cursorPos])
+		after := string(runes[m.cursorPos:])
+		input := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#ffffff")).
+			Background(lipgloss.Color("#1c1c2c")).
+			Render("New header key: " + before + "█" + after)
+		hint := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\n[enter] confirm  [esc] cancel")
+		return input + hint
+	}
+
 	if len(m.request.Headers) == 0 {
 		return lipgloss.NewStyle().
 			Foreground(lipgloss.Color("240")).
@@ -293,7 +350,8 @@ func (m *EditorModel) renderHeadersTab() string {
 		}
 		lines = append(lines, line)
 	}
-	return strings.Join(lines, "\n")
+	hint := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\n[i] add header")
+	return strings.Join(lines, "\n") + hint
 }
 
 func (m *EditorModel) renderBodyTab() string {
@@ -305,11 +363,23 @@ func (m *EditorModel) renderBodyTab() string {
 		Foreground(lipgloss.Color("#e4e4e4")).
 		Render(string(m.request.Body.Type))
 
-	content := m.request.Body.Content
-	if content == "" {
+	var content string
+	if m.editingField == "body" {
+		runes := []rune(m.fieldValue)
+		before := string(runes[:m.cursorPos])
+		after := string(runes[m.cursorPos:])
 		content = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240")).
-			Render("(empty body)")
+			Foreground(lipgloss.Color("#ffffff")).
+			Background(lipgloss.Color("#1c1c2c")).
+			Render(before + "█" + after)
+		content += lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\n[enter] confirm  [esc] cancel")
+	} else {
+		content = m.request.Body.Content
+		if content == "" {
+			content = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("240")).
+				Render("(empty body)  [i] to edit")
+		}
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Left,
@@ -320,6 +390,18 @@ func (m *EditorModel) renderBodyTab() string {
 }
 
 func (m *EditorModel) renderQueryTab() string {
+	if m.editingField == "query_key" {
+		runes := []rune(m.fieldValue)
+		before := string(runes[:m.cursorPos])
+		after := string(runes[m.cursorPos:])
+		input := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#ffffff")).
+			Background(lipgloss.Color("#1c1c2c")).
+			Render("New param key: " + before + "█" + after)
+		hint := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\n[enter] confirm  [esc] cancel")
+		return input + hint
+	}
+
 	if len(m.request.QueryParams) == 0 {
 		return lipgloss.NewStyle().
 			Foreground(lipgloss.Color("240")).
@@ -334,10 +416,23 @@ func (m *EditorModel) renderQueryTab() string {
 		}
 		lines = append(lines, fmt.Sprintf("%s  %s = %s", enabled, p.Key, p.Value))
 	}
-	return strings.Join(lines, "\n")
+	hint := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\n[i] add parameter")
+	return strings.Join(lines, "\n") + hint
 }
 
 func (m *EditorModel) renderAuthTab() string {
+	if m.editingField == "auth_token" {
+		runes := []rune(m.fieldValue)
+		before := string(runes[:m.cursorPos])
+		after := string(runes[m.cursorPos:])
+		input := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#ffffff")).
+			Background(lipgloss.Color("#1c1c2c")).
+			Render("Bearer token: " + before + "█" + after)
+		hint := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("\n[enter] confirm  [esc] cancel")
+		return input + hint
+	}
+
 	authLabel := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#87d7ff")).
 		Render("Type: ")
