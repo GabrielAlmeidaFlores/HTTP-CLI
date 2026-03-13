@@ -113,9 +113,9 @@ if i == s.current {
 items = append(items, lipgloss.NewStyle().
 Background(lipgloss.Color("#00d7ff")).
 Foreground(lipgloss.Color("#000000")).
-Render("▶ "+opt))
+Render("▶ "+opt+" "))
 } else {
-items = append(items, "  "+opt)
+items = append(items, "  "+opt+" ")
 }
 }
 dropdown := lipgloss.NewStyle().
