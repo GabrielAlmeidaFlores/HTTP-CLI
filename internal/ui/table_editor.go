@@ -73,7 +73,7 @@ return true, false
 return false, false
 }
 switch key {
-case "enter", " ":
+case "enter", " ", "e":
 s.open = true
 return true, false
 case "right":
@@ -277,7 +277,7 @@ if t.colIdx < 2 {
 t.colIdx++
 }
 return true
-case "enter", "i":
+case "e":
 if t.colIdx > 0 && n > 0 {
 t.startEdit("")
 }
@@ -285,10 +285,9 @@ return true
 case " ":
 if t.colIdx == 0 && n > 0 {
 t.rows[t.rowIdx].enabled = !t.rows[t.rowIdx].enabled
-} else if t.colIdx > 0 && n > 0 {
-t.startEdit("")
-}
 return true
+}
+return false
 case "d":
 if n > 0 {
 t.rows = append(t.rows[:t.rowIdx], t.rows[t.rowIdx+1:]...)
@@ -300,18 +299,6 @@ t.rowIdx = len(t.rows) - 1
 }
 }
 return true
-case "tab":
-if t.colIdx < 2 {
-t.colIdx++
-} else {
-t.colIdx = 0
-}
-return true
-default:
-if isPrintable(key) && t.colIdx > 0 && n > 0 {
-t.startEdit(key)
-return true
-}
 }
 return false
 }

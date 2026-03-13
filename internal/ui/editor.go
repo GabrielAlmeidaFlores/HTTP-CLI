@@ -231,12 +231,19 @@ return nil
 m.request = req
 key := msg.String()
 
+if key == "esc" {
+m.CancelSubEdit()
+return nil
+}
+
 switch key {
 case "]":
+m.syncToRequest()
 m.nextTab()
 m.syncFromRequest()
 return nil
 case "[":
+m.syncToRequest()
 m.prevTab()
 m.syncFromRequest()
 return nil
@@ -273,7 +280,7 @@ return
 switch key {
 case "down":
 m.urlRowIdx = 1
-case "enter", " ":
+case "enter", " ", "e":
 m.methodSel.open = true
 case "right":
 m.methodSel.next()
@@ -289,6 +296,10 @@ switch key {
 case "enter":
 m.urlEditing = false
 m.request.URL = m.urlEditVal
+case "esc":
+m.urlEditing = false
+m.urlEditVal = m.request.URL
+m.urlCursor = len([]rune(m.urlEditVal))
 case "backspace":
 if m.urlCursor > 0 {
 runes := []rune(m.urlEditVal)
@@ -319,16 +330,9 @@ m.urlCursor++
 switch key {
 case "up":
 m.urlRowIdx = 0
-case "enter", "i":
+case "e":
 m.urlEditing = true
 m.urlCursor = len([]rune(m.urlEditVal))
-default:
-if isPrintable(key) {
-m.urlEditing = true
-runes := []rune(m.urlEditVal)
-m.urlEditVal = string(runes) + key
-m.urlCursor = len([]rune(m.urlEditVal))
-}
 }
 }
 }
@@ -359,7 +363,7 @@ return
 switch key {
 case "down":
 m.bodyRowIdx = 1
-case "enter", " ":
+case "enter", " ", "e":
 m.bodyTypeSel.open = true
 case "right":
 m.bodyTypeSel.next()
@@ -394,6 +398,10 @@ switch key {
 case "enter":
 m.bodyEditing = false
 m.request.Body.Content = m.bodyEditVal
+case "esc":
+m.bodyEditing = false
+m.bodyEditVal = m.request.Body.Content
+m.bodyCursor = len([]rune(m.bodyEditVal))
 case "backspace":
 if m.bodyCursor > 0 {
 runes := []rune(m.bodyEditVal)
@@ -424,15 +432,9 @@ m.bodyCursor++
 switch key {
 case "up":
 m.bodyRowIdx = 0
-case "enter", "i":
+case "e":
 m.bodyEditing = true
 m.bodyCursor = len([]rune(m.bodyEditVal))
-default:
-if isPrintable(key) {
-m.bodyEditing = true
-m.bodyEditVal += key
-m.bodyCursor = len([]rune(m.bodyEditVal))
-}
 }
 }
 }
@@ -519,7 +521,7 @@ case "down":
 if len(fields) > 0 {
 m.authRowIdx = 1
 }
-case "enter", " ":
+case "enter", " ", "e":
 m.authTypeSel.open = true
 case "right":
 m.authTypeSel.next()
@@ -538,6 +540,10 @@ switch key {
 case "enter":
 m.setAuthFieldValue(fieldIdx, m.authEditVal)
 m.authEditing = false
+case "esc":
+m.authEditing = false
+m.authEditVal = ""
+m.authCursor = 0
 case "backspace":
 if m.authCursor > 0 {
 runes := []rune(m.authEditVal)
@@ -578,16 +584,10 @@ m.authRowIdx--
 } else {
 m.authRowIdx = 0
 }
-case "enter", "i":
+case "e":
 m.authEditVal = m.getAuthFieldValue(fieldIdx)
 m.authCursor = len([]rune(m.authEditVal))
 m.authEditing = true
-default:
-if isPrintable(key) {
-m.authEditVal = m.getAuthFieldValue(fieldIdx) + key
-m.authCursor = len([]rune(m.authEditVal))
-m.authEditing = true
-}
 }
 }
 
@@ -611,7 +611,9 @@ return
 
 func (m *EditorModel) JumpToTab(n int) {
 if n >= 1 && n <= len(editorTabs) {
+m.syncToRequest()
 m.activeTab = editorTabs[n-1]
+m.syncFromRequest()
 }
 }
 
@@ -711,7 +713,7 @@ if urlFocused {
 urlLine = rowBg.Render("> "+padRight("URL", 10)+" ") + urlValStr
 }
 
-hint := dim.Render("  j/k navigate  l/r cycle method  enter/i edit URL  [ ] tabs")
+hint := dim.Render("  ↑↓ navigate  ←→ cycle method  e edit URL  1-5 tabs")
 return strings.Join([]string{hdr, sep, methodLine, urlLine, "", hint}, "\n")
 }
 
@@ -719,7 +721,7 @@ func (m *EditorModel) renderHeadersTab(focused bool) string {
 dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 cw := m.contentWidth()
 hdr := dim.Render("  " + strings.Repeat("─", cw-2))
-hint := dim.Render("  j/k rows  h/l cols  enter/i edit  space toggle  d delete  tab next col")
+hint := dim.Render("  ↑↓←→ navigate  e edit cell  space toggle  d delete")
 content := m.headersTable.render(cw, focused)
 return strings.Join([]string{content, hdr, hint}, "\n")
 }
@@ -728,7 +730,7 @@ func (m *EditorModel) renderQueryTab(focused bool) string {
 dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 cw := m.contentWidth()
 hdr := dim.Render("  " + strings.Repeat("─", cw-2))
-hint := dim.Render("  j/k rows  h/l cols  enter/i edit  space toggle  d delete  tab next col")
+hint := dim.Render("  ↑↓←→ navigate  e edit cell  space toggle  d delete")
 content := m.queryTable.render(cw, focused)
 return strings.Join([]string{content, hdr, hint}, "\n")
 }
@@ -771,7 +773,7 @@ case models.BodyFormData, models.BodyURLEncoded:
 content = m.bodyFormTable.render(cw, contentFocused)
 }
 
-hint := dim.Render("  j/k navigate  l/r cycle type  enter/i edit  [ ] tabs")
+hint := dim.Render("  ↑↓ navigate  ←→ cycle type  e edit  1-5 tabs")
 return strings.Join([]string{typeLine, "", content, "", hint}, "\n")
 }
 
@@ -822,7 +824,7 @@ line = rowBg.Render(line)
 fieldLines = append(fieldLines, line)
 }
 
-hint := dim.Render("  j/k navigate  enter/i edit  l/r cycle type")
+hint := dim.Render("  ↑↓ navigate  ←→ cycle type  e edit field")
 parts := []string{typeLine, hdr, sep}
 parts = append(parts, fieldLines...)
 parts = append(parts, "", hint)

@@ -21,7 +21,6 @@ type AppMode string
 
 const (
 	ModeNormal AppMode = "normal"
-	ModeInsert AppMode = "insert"
 	ModeSearch AppMode = "search"
 )
 
@@ -170,21 +169,6 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 	key := msg.String()
 
-	if a.mode == ModeInsert {
-		if key == "esc" {
-			if a.focused == PanelEditor {
-				a.editor.CancelSubEdit()
-			}
-			a.mode = ModeNormal
-			a.editor.Reset()
-			return nil
-		}
-		if key == "ctrl+e" {
-			return a.executeRequest()
-		}
-		return a.routeKeyToPanel(msg)
-	}
-
 	if a.isSearching {
 		switch key {
 		case "esc":
@@ -207,6 +191,10 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 		return nil
 	}
 
+	if a.focused == PanelEditor {
+		return a.handleEditorKey(msg)
+	}
+
 	binding, found := a.keybindMgr.Resolve(key, string(a.focused))
 	if !found {
 		binding, found = a.keybindMgr.Resolve(key, "global")
@@ -217,6 +205,60 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 	}
 
 	return a.routeKeyToPanel(msg)
+}
+
+func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
+	key := msg.String()
+
+	switch key {
+	case "tab":
+		a.nextPanel()
+		return nil
+	case "shift+tab":
+		a.prevPanel()
+		return nil
+	case "ctrl+e":
+		return a.executeRequest()
+	case "ctrl+s":
+		if a.selectedReq != nil {
+			_ = a.store.SaveRequest(context.Background(), a.selectedReq)
+			a.setStatus("Saved")
+		}
+		return nil
+	}
+
+	if a.selectedReq == nil {
+		return nil
+	}
+
+	if !a.editor.IsSubEditing() {
+		switch key {
+		case "q", "ctrl+c":
+			return tea.Quit
+		case "/":
+			a.isSearching = true
+			a.searchQuery = ""
+			a.focused = PanelRequestList
+			return nil
+		case "1":
+			a.editor.JumpToTab(1)
+			return nil
+		case "2":
+			a.editor.JumpToTab(2)
+			return nil
+		case "3":
+			a.editor.JumpToTab(3)
+			return nil
+		case "4":
+			a.editor.JumpToTab(4)
+			return nil
+		case "5":
+			a.editor.JumpToTab(5)
+			return nil
+		}
+	}
+
+	return a.editor.handleKey(msg, a.selectedReq)
 }
 
 func (a *App) executeAction(action, _ string) tea.Cmd {
@@ -330,10 +372,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		}
 
 	case "insert_mode":
-		a.mode = ModeInsert
-		if a.focused == PanelEditor {
-			a.editor.StartEditing(a.selectedReq)
-		}
+		// no-op: editor is always editable when focused
 
 	case "down":
 		switch a.focused {
@@ -575,9 +614,11 @@ func (a *App) renderStatusBar() string {
 		return ""
 	}
 
-	mode := string(a.mode)
+	mode := "NORMAL"
 	if a.isSearching {
 		mode = "SEARCH: " + a.searchQuery
+	} else if a.focused == PanelEditor && a.editor.IsSubEditing() {
+		mode = "EDITING"
 	}
 
 	modeStyle := lipgloss.NewStyle().
@@ -585,6 +626,10 @@ func (a *App) renderStatusBar() string {
 		Padding(0, 1).
 		Background(lipgloss.Color("#005fd7")).
 		Foreground(lipgloss.Color("#ffffff"))
+
+	if mode == "EDITING" {
+		modeStyle = modeStyle.Background(lipgloss.Color("#d75f00"))
+	}
 
 	status := ""
 	if time.Now().Before(a.statusExpiry) {
@@ -599,7 +644,7 @@ func (a *App) renderStatusBar() string {
 		Foreground(lipgloss.Color("#87d7ff"))
 
 	bar := lipgloss.JoinHorizontal(lipgloss.Top,
-		modeStyle.Render(strings.ToUpper(mode)),
+		modeStyle.Render(mode),
 		panelStyle.Render("["+panel+"]"),
 		statusStyle.Render(status),
 	)
