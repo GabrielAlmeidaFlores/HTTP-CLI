@@ -78,7 +78,7 @@
     "timeout_seconds": 30,
     "follow_redirects": true,
     "verify_ssl": true,
-    "user_agent": "httpctl/1.0"
+    "user_agent": "http-cli/1.0"
   },
   "storage": {
     "history_limit": 100,

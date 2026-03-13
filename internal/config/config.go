@@ -174,5 +174,5 @@ func DefaultUserConfigPath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".config", "httpctl", "config.json")
+	return filepath.Join(home, ".config", "http-cli", "config.json")
 }

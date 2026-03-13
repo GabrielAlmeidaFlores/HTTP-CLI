@@ -1,11 +1,11 @@
 .PHONY: build run test clean fmt lint
 
-BINARY=httpctl
+BINARY=http-cli
 BUILD_DIR=bin
 
 build:
 	@mkdir -p $(BUILD_DIR)
-	go build -ldflags="-s -w" -o $(BUILD_DIR)/$(BINARY) ./cmd/httpctl
+	go build -ldflags="-s -w" -o $(BUILD_DIR)/$(BINARY) ./cmd/http-cli
 
 run: build
 	./$(BUILD_DIR)/$(BINARY)
