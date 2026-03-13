@@ -54,48 +54,67 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 func (a *App) handleResponseKey(msg tea.KeyMsg) tea.Cmd {
 	key := msg.String()
 
+	switch key {
+	case "j", "down":
+		a.response.ScrollDown()
+		return nil
+	case "k", "up":
+		a.response.ScrollUp()
+		return nil
+	case "tab", "l":
+		a.response.NextTab()
+		return nil
+	case "shift+tab", "h":
+		a.response.PrevTab()
+		return nil
+	case "g":
+		a.response.scrollY = 0
+		return nil
+	case "G":
+		a.response.scrollY = a.response.totalContentLines() - a.response.contentHeight()
+		if a.response.scrollY < 0 {
+			a.response.scrollY = 0
+		}
+		return nil
+	case "ctrl+d":
+		a.response.scrollY += a.response.contentHeight() / 2
+		return nil
+	case "ctrl+u":
+		a.response.scrollY -= a.response.contentHeight() / 2
+		if a.response.scrollY < 0 {
+			a.response.scrollY = 0
+		}
+		return nil
+	case "1":
+		a.response.activeTab = responseTabBody
+		a.response.scrollY = 0
+		return nil
+	case "2":
+		a.response.activeTab = responseTabHeaders
+		a.response.scrollY = 0
+		return nil
+	case "3":
+		a.response.activeTab = responseTabInfo
+		a.response.scrollY = 0
+		return nil
+	}
+
 	if binding, ok := a.keybindMgr.Resolve(key, "response"); ok {
 		switch binding.Action {
-		case "next_tab":
-			a.response.NextTab()
-			return nil
-		case "prev_tab":
-			a.response.PrevTab()
-			return nil
-		case "scroll_down", "down":
-			a.response.ScrollDown()
-			return nil
-		case "scroll_up", "up":
-			a.response.ScrollUp()
-			return nil
+		case "next_panel":
+			a.nextPanel()
+		case "prev_panel":
+			a.prevPanel()
 		default:
 			return a.executeAction(binding.Action, binding.Panel)
 		}
+		return nil
 	}
 
 	if binding, ok := a.keybindMgr.Resolve(key, "global"); ok {
 		return a.executeAction(binding.Action, binding.Panel)
 	}
 
-	switch key {
-	case "tab":
-		a.response.NextTab()
-	case "shift+tab":
-		a.response.PrevTab()
-	case "j", "down":
-		a.response.ScrollDown()
-	case "k", "up":
-		a.response.ScrollUp()
-	case "1":
-		a.response.activeTab = responseTabBody
-		a.response.scrollY = 0
-	case "2":
-		a.response.activeTab = responseTabHeaders
-		a.response.scrollY = 0
-	case "3":
-		a.response.activeTab = responseTabInfo
-		a.response.scrollY = 0
-	}
 	return nil
 }
 

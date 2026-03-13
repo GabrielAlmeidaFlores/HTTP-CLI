@@ -183,7 +183,7 @@ return errorStyle().Render("Error: " + m.response.Error)
 statusStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(m.StatusColor(theme)))
 statusLine := statusStyle.Render(fmt.Sprintf("%d %s", m.response.Status, m.response.StatusText))
 meta := dimStyle().Render(fmt.Sprintf("  %dms  %s", m.response.Duration.Milliseconds(), formatSize(m.response.Size)))
-hint := lipgloss.NewStyle().Foreground(lipgloss.Color("#4e4e4e")).Render("  v open viewer  tab next tab")
+hint := lipgloss.NewStyle().Foreground(lipgloss.Color("#4e4e4e")).Render("  j/k scroll  g/G top/bot  ctrl+d/u half  tab next tab  v viewer")
 
 sep := lipgloss.NewStyle().Foreground(lipgloss.Color("#333333")).Render(strings.Repeat("─", cw))
 
@@ -396,4 +396,15 @@ return string(data), nil
 
 func (m *ResponseModel) totalLines() int {
 return len(strings.Split(m.FormattedBody(), "\n"))
+}
+
+func (m *ResponseModel) totalContentLines() int {
+switch m.activeTab {
+case responseTabHeaders:
+return len(m.response.Headers) + 2
+case responseTabInfo:
+return 20
+default:
+return m.totalLines()
+}
 }
