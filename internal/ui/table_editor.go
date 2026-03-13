@@ -424,18 +424,45 @@ return strings.Join(parts, "\n")
 
 func renderEditCursor(val string, cursor int, maxWidth int) string {
 runes := []rune(val)
-before := string(runes[:cursor])
-after := ""
-if cursor < len(runes) {
-after = string(runes[cursor:])
+n := len(runes)
+
+contentWidth := maxWidth - 1
+if contentWidth < 1 {
+contentWidth = 1
 }
-result := before + "█" + after
-if len([]rune(result)) > maxWidth {
-result = truncate(result, maxWidth)
+
+idealBefore := contentWidth * 2 / 3
+start := cursor - idealBefore
+if start < 0 {
+start = 0
 }
+
+beforeRunes := runes[start:cursor]
+
+afterCount := contentWidth - len(beforeRunes)
+afterEnd := cursor + afterCount
+if afterEnd > n {
+afterEnd = n
+}
+afterRunes := runes[cursor:afterEnd]
+
+beforeStr := string(beforeRunes)
+afterStr := string(afterRunes)
+
+if start > 0 && len(beforeRunes) > 0 {
+br := []rune(beforeStr)
+br[0] = '‹'
+beforeStr = string(br)
+} else if start > 0 {
+beforeStr = "‹"
+}
+
+result := padRight(beforeStr+"█"+afterStr, maxWidth)
+
 return lipgloss.NewStyle().
-Background(lipgloss.Color("#1c2c4c")).
+Background(lipgloss.Color("#005f87")).
 Foreground(lipgloss.Color("#ffffff")).
+Bold(true).
 Render(result)
 }
 
