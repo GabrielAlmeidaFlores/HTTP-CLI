@@ -118,7 +118,7 @@ func (m *Manager) GetHints(panel, activeTab string) []Binding {
 			if b.Panel != panel {
 				continue
 			}
-			if b.Tab != "" && b.Tab != activeTab {
+			if b.Tab != activeTab {
 				continue
 			}
 		} else {

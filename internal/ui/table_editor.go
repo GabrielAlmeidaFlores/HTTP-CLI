@@ -431,14 +431,21 @@ if contentWidth < 1 {
 contentWidth = 1
 }
 
-idealBefore := contentWidth * 2 / 3
-start := cursor - idealBefore
+var start int
+if n <= contentWidth {
+start = 0
+} else {
+edgePos := contentWidth - 2
+if edgePos < 1 {
+edgePos = 1
+}
+start = cursor - edgePos
 if start < 0 {
 start = 0
 }
+}
 
 beforeRunes := runes[start:cursor]
-
 afterCount := contentWidth - len(beforeRunes)
 afterEnd := cursor + afterCount
 if afterEnd > n {

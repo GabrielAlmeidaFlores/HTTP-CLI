@@ -365,6 +365,19 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			return a.loadRequests()
 		}
 
+	case "rename_request":
+		if a.selectedReq != nil {
+			req := a.selectedReq
+			a.promptInput("Rename request:", req.Name, func(name string) {
+				if name != "" {
+					req.Name = name
+					_ = a.store.SaveRequest(context.Background(), req)
+					a.requestList.setRequests(a.requests)
+					a.setStatus("Renamed to '" + name + "'")
+				}
+			})
+		}
+
 	case "select_request":
 		if req := a.requestList.selected(); req != nil {
 			a.selectRequest(req)
