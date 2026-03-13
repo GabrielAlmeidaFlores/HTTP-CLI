@@ -73,13 +73,13 @@ func (a *App) handleInputDialog(msg tea.KeyMsg) tea.Cmd {
 		a.inputCursor = 0
 	case "end":
 		a.inputCursor = n
-	case "ctrl+v":
-		text, err := clipboard.ReadAll()
-		if err == nil {
-			a.inputValue, a.inputCursor = insertAtCursor(a.inputValue, a.inputCursor, text)
-		}
 	default:
-		if len(key) == 1 {
+		if isPasteKey(key) {
+			text, err := clipboard.ReadAll()
+			if err == nil {
+				a.inputValue, a.inputCursor = insertAtCursor(a.inputValue, a.inputCursor, text)
+			}
+		} else if len(key) == 1 {
 			a.inputValue, a.inputCursor = insertAtCursor(a.inputValue, a.inputCursor, key)
 		}
 	}
@@ -150,20 +150,22 @@ func (a *App) handleCellEditModal(msg tea.KeyMsg) tea.Cmd {
 		a.cellEditCursor = 0
 	case "end", "ctrl+e":
 		a.cellEditCursor = n
-	case "ctrl+v":
-		text, err := clipboard.ReadAll()
-		if err == nil {
-			a.cellEditVal, a.cellEditCursor = insertAtCursor(a.cellEditVal, a.cellEditCursor, text)
-		}
 	default:
-		r := []rune(key)
-		if len(r) == 1 && r[0] >= 32 && r[0] != 127 {
-			newRunes := make([]rune, n+1)
-			copy(newRunes, runes[:a.cellEditCursor])
-			newRunes[a.cellEditCursor] = r[0]
-			copy(newRunes[a.cellEditCursor+1:], runes[a.cellEditCursor:])
-			a.cellEditVal = string(newRunes)
-			a.cellEditCursor++
+		if isPasteKey(key) {
+			text, err := clipboard.ReadAll()
+			if err == nil {
+				a.cellEditVal, a.cellEditCursor = insertAtCursor(a.cellEditVal, a.cellEditCursor, text)
+			}
+		} else {
+			r := []rune(key)
+			if len(r) == 1 && r[0] >= 32 && r[0] != 127 {
+				newRunes := make([]rune, n+1)
+				copy(newRunes, runes[:a.cellEditCursor])
+				newRunes[a.cellEditCursor] = r[0]
+				copy(newRunes[a.cellEditCursor+1:], runes[a.cellEditCursor:])
+				a.cellEditVal = string(newRunes)
+				a.cellEditCursor++
+			}
 		}
 	}
 	return nil
@@ -226,14 +228,21 @@ func (a *App) handleCurlImportModal(msg tea.KeyMsg) tea.Cmd {
 	case "end", "ctrl+e":
 		a.curlImportCursor = n
 	default:
-		r := []rune(key)
-		if len(r) == 1 && r[0] >= 32 && r[0] != 127 {
-			newRunes := make([]rune, n+1)
-			copy(newRunes, runes[:a.curlImportCursor])
-			newRunes[a.curlImportCursor] = r[0]
-			copy(newRunes[a.curlImportCursor+1:], runes[a.curlImportCursor:])
-			a.curlImportVal = string(newRunes)
-			a.curlImportCursor++
+		if isPasteKey(key) {
+			text, err := clipboard.ReadAll()
+			if err == nil {
+				a.curlImportVal, a.curlImportCursor = insertAtCursor(a.curlImportVal, a.curlImportCursor, text)
+			}
+		} else {
+			r := []rune(key)
+			if len(r) == 1 && r[0] >= 32 && r[0] != 127 {
+				newRunes := make([]rune, n+1)
+				copy(newRunes, runes[:a.curlImportCursor])
+				newRunes[a.curlImportCursor] = r[0]
+				copy(newRunes[a.curlImportCursor+1:], runes[a.curlImportCursor:])
+				a.curlImportVal = string(newRunes)
+				a.curlImportCursor++
+			}
 		}
 	}
 	return nil

@@ -70,9 +70,10 @@ cellEditVal    string
 cellEditCursor int
 cellEditCommit func(string)
 
-showCurlImport   bool
-curlImportVal    string
-curlImportCursor int
+showCurlImport    bool
+curlImportVal     string
+curlImportCursor  int
+curlImportScroll  int
 
 showNotification  bool
 notificationMsg   string

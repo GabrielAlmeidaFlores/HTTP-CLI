@@ -246,6 +246,8 @@ func (a *App) renderCellEditModal() string {
 }
 
 func (a *App) renderCurlImportModal() string {
+	const visibleLines = 5
+
 	modalW := a.width * 3 / 4
 	if modalW > 110 {
 		modalW = 110
@@ -254,39 +256,69 @@ func (a *App) renderCurlImportModal() string {
 		modalW = 50
 	}
 	contentW := modalW - 6
+	lineW := contentW - 2
 
 	titleStyle := accentStyle().Bold(true)
 	dim := dimStyle()
 
 	runes := []rune(a.curlImportVal)
 	cursor := a.curlImportCursor
-	before := string(runes[:cursor])
-	after := ""
-	if cursor < len(runes) {
-		after = string(runes[cursor:])
-	}
-	textContent := before + "█" + after
+
+	wrapped := wrapRunesIntoLines(runes, lineW)
+
+	cursorLine, cursorCol := cursorLineCol(runes, cursor, lineW)
+
+	a.curlImportScroll = syncScrollLine(a.curlImportScroll, cursorLine, visibleLines)
 
 	inputStyle := lipgloss.NewStyle().
 		Width(contentW).
-		Height(4).
+		Height(visibleLines).
 		Padding(0, 1).
 		Background(lipgloss.Color("#1c1c2c")).
 		Foreground(lipgloss.Color("#ffffff"))
 
+	var renderedLines []string
+	start := a.curlImportScroll
+	end := start + visibleLines
+	if end > len(wrapped) {
+		end = len(wrapped)
+	}
+	for lineIdx := start; lineIdx < end; lineIdx++ {
+		line := wrapped[lineIdx]
+		if lineIdx == cursorLine {
+			before := string(line[:cursorCol])
+			after := ""
+			if cursorCol < len(line) {
+				after = string(line[cursorCol:])
+			}
+			renderedLines = append(renderedLines, before+"█"+after)
+		} else {
+			renderedLines = append(renderedLines, string(line))
+		}
+	}
+	if len(renderedLines) == 0 {
+		renderedLines = []string{"█"}
+	}
+
+	scrollInfo := ""
+	totalLines := len(wrapped)
+	if totalLines > visibleLines {
+		scrollInfo = dim.Render(fmt.Sprintf(" (%d/%d lines)", cursorLine+1, totalLines))
+	}
+
 	dimKey := accentStyle().Bold(true)
 	descStyle := dimStyle()
-
 	hintsRow := a.buildModalHints("curl_import_modal", dimKey, descStyle)
 
-	example := dim.Render("e.g. curl -X POST https://api.example.com -H 'Content-Type: application/json' -d '{\"key\":\"val\"}'")
+	example := dim.Render("e.g. curl -X POST https://api.example.com -H 'Content-Type: application/json' -d '{}'")
 
 	body := lipgloss.JoinVertical(lipgloss.Left,
 		titleStyle.Render("Import from cURL"),
 		"",
 		example,
 		"",
-		inputStyle.Render(textContent),
+		inputStyle.Render(strings.Join(renderedLines, "\n")),
+		scrollInfo,
 		"",
 		hintsRow,
 	)

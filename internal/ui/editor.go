@@ -333,13 +333,13 @@ case "right":
 if m.urlCursor < len([]rune(m.urlEditVal)) {
 m.urlCursor++
 }
-case "ctrl+v":
+default:
+if isPasteKey(key) {
 text, err := clipboard.ReadAll()
 if err == nil {
 m.urlEditVal, m.urlCursor = insertAtCursor(m.urlEditVal, m.urlCursor, text)
 }
-default:
-if isPrintable(key) {
+} else if isPrintable(key) {
 runes := []rune(m.urlEditVal)
 r := []rune(key)[0]
 newRunes := make([]rune, len(runes)+1)
@@ -438,13 +438,13 @@ case "right":
 if m.bodyCursor < len([]rune(m.bodyEditVal)) {
 m.bodyCursor++
 }
-case "ctrl+v":
+default:
+if isPasteKey(key) {
 text, err := clipboard.ReadAll()
 if err == nil {
 m.bodyEditVal, m.bodyCursor = insertAtCursor(m.bodyEditVal, m.bodyCursor, text)
 }
-default:
-if isPrintable(key) {
+} else if isPrintable(key) {
 runes := []rune(m.bodyEditVal)
 r := []rune(key)[0]
 newRunes := make([]rune, len(runes)+1)
@@ -585,13 +585,13 @@ case "right":
 if m.authCursor < len([]rune(m.authEditVal)) {
 m.authCursor++
 }
-case "ctrl+v":
+default:
+if isPasteKey(key) {
 text, err := clipboard.ReadAll()
 if err == nil {
 m.authEditVal, m.authCursor = insertAtCursor(m.authEditVal, m.authCursor, text)
 }
-default:
-if isPrintable(key) {
+} else if isPrintable(key) {
 runes := []rune(m.authEditVal)
 r := []rune(key)[0]
 newRunes := make([]rune, len(runes)+1)

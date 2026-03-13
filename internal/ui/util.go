@@ -33,6 +33,10 @@ func isPrintable(key string) bool {
 	return r >= 32 && r != 127
 }
 
+func isPasteKey(key string) bool {
+	return key == "ctrl+v" || key == "ctrl+V"
+}
+
 func formatSize(bytes int64) string {
 	switch {
 	case bytes < 1024:
@@ -54,8 +58,46 @@ func insertAtCursor(val string, cursor int, text string) (string, int) {
 	return string(newRunes), cursor + len(textRunes)
 }
 
-func overlayCenter(bg, fg string, w, h int) string {
-	bgLines := strings.Split(bg, "\n")
+func wrapRunesIntoLines(runes []rune, lineW int) [][]rune {
+	if lineW < 1 {
+		lineW = 1
+	}
+	if len(runes) == 0 {
+		return [][]rune{{}}
+	}
+	var lines [][]rune
+	for len(runes) > 0 {
+		if len(runes) <= lineW {
+			lines = append(lines, runes)
+			break
+		}
+		lines = append(lines, runes[:lineW])
+		runes = runes[lineW:]
+	}
+	return lines
+}
+
+func cursorLineCol(runes []rune, cursor, lineW int) (int, int) {
+	if lineW < 1 {
+		lineW = 1
+	}
+	if cursor > len(runes) {
+		cursor = len(runes)
+	}
+	return cursor / lineW, cursor % lineW
+}
+
+func syncScrollLine(scroll, cursorLine, visibleLines int) int {
+	if cursorLine < scroll {
+		return cursorLine
+	}
+	if cursorLine >= scroll+visibleLines {
+		return cursorLine - visibleLines + 1
+	}
+	return scroll
+}
+
+func overlayCenter(bg, fg string, w, h int) string {	bgLines := strings.Split(bg, "\n")
 	fgLines := strings.Split(fg, "\n")
 
 	fgH := len(fgLines)

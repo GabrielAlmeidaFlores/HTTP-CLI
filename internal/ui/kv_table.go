@@ -125,14 +125,14 @@ func (t *kvTable) handleEditKey(key string) bool {
 			t.editCursor++
 		}
 		return true
-	case "ctrl+v":
-		text, err := clipboard.ReadAll()
-		if err == nil {
-			t.editVal, t.editCursor = insertAtCursor(t.editVal, t.editCursor, text)
-		}
-		return true
 	default:
-		if isPrintable(key) {
+		if isPasteKey(key) {
+			text, err := clipboard.ReadAll()
+			if err == nil {
+				t.editVal, t.editCursor = insertAtCursor(t.editVal, t.editCursor, text)
+			}
+			return true
+		} else if isPrintable(key) {
 			runes := []rune(t.editVal)
 			r := []rune(key)[0]
 			newRunes := make([]rune, len(runes)+1)
