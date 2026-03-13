@@ -56,6 +56,8 @@ authCursor  int
 }
 
 func newEditorModel(km *keybindings.Manager) EditorModel {
+ft := newKvTable(nil)
+ft.showFileType = true
 return EditorModel{
 keybindMgr:    km,
 activeTab:     TabURL,
@@ -64,7 +66,7 @@ bodyTypeSel:   newSelectBox(bodyTypeOptions(), "none"),
 authTypeSel:   newSelectBox(authTypeOptions(), "none"),
 headersTable:  newKvTable(nil),
 queryTable:    newKvTable(nil),
-bodyFormTable: newKvTable(nil),
+bodyFormTable: ft,
 }
 }
 
@@ -108,9 +110,9 @@ m.bodyCursor = len([]rune(m.bodyEditVal))
 m.bodyRowIdx = 0
 fRows := make([]kvRow, len(m.request.Body.FormData))
 for i, f := range m.request.Body.FormData {
-fRows[i] = kvRow{enabled: f.Enabled, key: f.Key, value: f.Value}
+fRows[i] = kvRow{enabled: f.Enabled, key: f.Key, value: f.Value, isFile: f.Type == models.FormFieldFile}
 }
-m.bodyFormTable = newKvTable(fRows)
+{ ft := newKvTable(fRows); ft.showFileType = true; m.bodyFormTable = ft }
 
 qRows := make([]kvRow, len(m.request.QueryParams))
 for i, p := range m.request.QueryParams {
@@ -663,6 +665,10 @@ return "Body Content"
 }
 if m.bodyFormTable.colIdx == 1 {
 return "Form · Key"
+}
+isFileRow := m.bodyFormTable.rowIdx < len(m.bodyFormTable.rows) && m.bodyFormTable.rows[m.bodyFormTable.rowIdx].isFile
+if isFileRow {
+return "Form · File Path"
 }
 return "Form · Value"
 case TabQuery:

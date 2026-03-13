@@ -129,15 +129,17 @@ type kvRow struct {
 enabled bool
 key     string
 value   string
+isFile  bool
 }
 
 type kvTable struct {
-rows       []kvRow
-rowIdx     int
-colIdx     int
-editing    bool
-editVal    string
-editCursor int
+rows        []kvRow
+rowIdx      int
+colIdx      int
+editing     bool
+editVal     string
+editCursor  int
+showFileType bool
 }
 
 func newKvTable(rows []kvRow) kvTable {
@@ -299,6 +301,11 @@ t.rowIdx = len(t.rows) - 1
 }
 }
 return true
+case "t":
+if t.showFileType && n > 0 {
+t.rows[t.rowIdx].isFile = !t.rows[t.rowIdx].isFile
+return true
+}
 }
 return false
 }
@@ -327,7 +334,11 @@ func (t *kvTable) toFormFields() []models.FormField {
 var out []models.FormField
 for _, r := range t.rows {
 if r.key != "" {
-out = append(out, models.FormField{Key: r.key, Value: r.value, Enabled: r.enabled, Type: models.FormFieldText})
+ft := models.FormFieldText
+if r.isFile {
+ft = models.FormFieldFile
+}
+out = append(out, models.FormField{Key: r.key, Value: r.value, Enabled: r.enabled, Type: ft})
 }
 }
 return out
@@ -338,17 +349,28 @@ dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 hdrStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#87d7ff"))
 enOn := lipgloss.NewStyle().Foreground(lipgloss.Color("#00af00"))
 enOff := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
+fileTag := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#d7af00"))
+textTag := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 rowBg := lipgloss.NewStyle().Background(lipgloss.Color("#1c1c2c"))
 cellBg := lipgloss.NewStyle().Background(lipgloss.Color("#005f87")).Bold(true)
 placeholder := lipgloss.NewStyle().Foreground(lipgloss.Color("#444444"))
 
-keyW := 22
-valW := width - 3 - keyW - 4
+typeColW := 0
+if t.showFileType {
+typeColW = 6
+}
+
+keyW := 20
+valW := width - 3 - keyW - 4 - typeColW
 if valW < 10 {
 valW = 10
 }
 
-hdr := hdrStyle.Render("  "+padRight("✓", 3)+padRight("Key", keyW+1)) + hdrStyle.Render("Value")
+hdrType := ""
+if t.showFileType {
+hdrType = hdrStyle.Render(padRight("Type", typeColW))
+}
+hdr := hdrStyle.Render("  "+padRight("✓", 3)+padRight("Key", keyW+1)) + hdrType + hdrStyle.Render("Value")
 sep := dim.Render("  " + strings.Repeat("─", width-4))
 
 var rows []string
@@ -368,7 +390,9 @@ keyDisplay = padRight(r.key, keyW)
 }
 
 valDisplay := r.value
-if valDisplay == "" {
+if r.isFile && valDisplay == "" {
+valDisplay = placeholder.Render(padRight("/path/to/file", valW))
+} else if valDisplay == "" {
 valDisplay = placeholder.Render(padRight("…", valW))
 } else {
 valDisplay = truncate(r.value, valW)
@@ -379,6 +403,23 @@ if t.colIdx == 1 {
 keyDisplay = renderEditCursor(t.editVal, t.editCursor, keyW)
 } else if t.colIdx == 2 {
 valDisplay = renderEditCursor(t.editVal, t.editCursor, valW)
+}
+}
+
+typeStr := ""
+if t.showFileType {
+if r.isFile {
+typeStr = fileTag.Render(padRight("FILE", typeColW))
+} else {
+typeStr = textTag.Render(padRight("text", typeColW))
+}
+if isCurrentRow && t.colIdx == 3 {
+typeStr = cellBg.Width(typeColW).Render(padRight(func() string {
+if r.isFile {
+return "FILE"
+}
+return "text"
+}(), typeColW))
 }
 }
 
@@ -395,6 +436,9 @@ valCell = valDisplay
 case 2:
 keyCell = keyDisplay
 valCell = cellBg.Width(valW).Render(padRight(r.value, valW))
+default:
+keyCell = keyDisplay
+valCell = valDisplay
 }
 } else {
 keyCell = keyDisplay
@@ -406,7 +450,7 @@ if isCurrentRow && insertMode {
 ptr = lipgloss.NewStyle().Foreground(lipgloss.Color("#00d7ff")).Render("> ")
 }
 
-line := ptr + enStr + "  " + keyCell + " " + valCell
+line := ptr + enStr + "  " + keyCell + " " + typeStr + valCell
 if isCurrentRow && insertMode {
 line = rowBg.Render(line)
 }
