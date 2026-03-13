@@ -173,7 +173,7 @@
       },
       "import_postman": {
         "keys": [
-          "ctrl+i"
+          "P"
         ],
         "description": "Import Postman",
         "category": "Requests",
@@ -181,7 +181,7 @@
       },
       "export_postman": {
         "keys": [
-          "ctrl+e"
+          "X"
         ],
         "description": "Export Postman",
         "category": "Requests",
