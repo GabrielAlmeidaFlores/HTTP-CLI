@@ -209,6 +209,9 @@ return t.handleNavKey(key)
 
 func (t *kvTable) handleEditKey(key string) bool {
 switch key {
+case "esc":
+	t.cancelEdit()
+	return true
 case "enter":
 t.commitEdit(false)
 return true

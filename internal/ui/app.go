@@ -172,9 +172,8 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 
 	if a.mode == ModeInsert {
 		if key == "esc" {
-			if a.focused == PanelEditor && a.editor.IsSubEditing() {
+			if a.focused == PanelEditor {
 				a.editor.CancelSubEdit()
-				return nil
 			}
 			a.mode = ModeNormal
 			a.editor.Reset()
