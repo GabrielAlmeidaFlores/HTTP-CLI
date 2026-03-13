@@ -271,13 +271,13 @@ return
 }
 } else {
 switch key {
-case "j", "down":
+case "down":
 m.urlRowIdx = 1
 case "enter", " ":
 m.methodSel.open = true
-case "l", "right":
+case "right":
 m.methodSel.next()
-case "h", "left":
+case "left":
 m.methodSel.prev()
 }
 }
@@ -317,7 +317,7 @@ m.urlCursor++
 }
 } else {
 switch key {
-case "k", "up":
+case "up":
 m.urlRowIdx = 0
 case "enter", "i":
 m.urlEditing = true
@@ -357,13 +357,13 @@ return
 }
 } else {
 switch key {
-case "j", "down":
+case "down":
 m.bodyRowIdx = 1
 case "enter", " ":
 m.bodyTypeSel.open = true
-case "l", "right":
+case "right":
 m.bodyTypeSel.next()
-case "h", "left":
+case "left":
 m.bodyTypeSel.prev()
 }
 }
@@ -374,13 +374,13 @@ bt = models.BodyType(m.bodyTypeSel.value())
 
 switch bt {
 case models.BodyNone:
-if key == "k" || key == "up" {
+if key == "up" {
 m.bodyRowIdx = 0
 }
 case models.BodyRaw, models.BodyJSON:
 m.handleBodyTextKey(key)
 case models.BodyFormData, models.BodyURLEncoded:
-if (key == "k" || key == "up") && !m.bodyFormTable.editing && m.bodyFormTable.rowIdx == 0 {
+if (key == "up") && !m.bodyFormTable.editing && m.bodyFormTable.rowIdx == 0 {
 m.bodyRowIdx = 0
 return
 }
@@ -422,7 +422,7 @@ m.bodyCursor++
 }
 } else {
 switch key {
-case "k", "up":
+case "up":
 m.bodyRowIdx = 0
 case "enter", "i":
 m.bodyEditing = true
@@ -515,16 +515,16 @@ return
 }
 } else {
 switch key {
-case "j", "down":
+case "down":
 if len(fields) > 0 {
 m.authRowIdx = 1
 }
 case "enter", " ":
 m.authTypeSel.open = true
-case "l", "right":
+case "right":
 m.authTypeSel.next()
 m.request.Auth.Type = models.AuthType(m.authTypeSel.value())
-case "h", "left":
+case "left":
 m.authTypeSel.prev()
 m.request.Auth.Type = models.AuthType(m.authTypeSel.value())
 }
@@ -568,11 +568,11 @@ return
 }
 
 switch key {
-case "j", "down":
+case "down":
 if fieldIdx < len(fields)-1 {
 m.authRowIdx++
 }
-case "k", "up":
+case "up":
 if fieldIdx > 0 {
 m.authRowIdx--
 } else {

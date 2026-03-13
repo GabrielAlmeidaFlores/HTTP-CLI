@@ -55,11 +55,11 @@ s.current = (s.current - 1 + len(s.options)) % len(s.options)
 func (s *selectBox) handleKey(key string) (bool, bool) {
 if s.open {
 switch key {
-case "j", "down", "r":
+case "down":
 prev := s.current
 s.next()
 return true, s.current != prev
-case "k", "up", "l":
+case "up":
 prev := s.current
 s.prev()
 return true, s.current != prev
@@ -76,11 +76,11 @@ switch key {
 case "enter", " ":
 s.open = true
 return true, false
-case "l", "right":
+case "right":
 prev := s.current
 s.next()
 return true, s.current != prev
-case "h", "left":
+case "left":
 prev := s.current
 s.prev()
 return true, s.current != prev
@@ -251,7 +251,7 @@ return false
 func (t *kvTable) handleNavKey(key string) bool {
 n := len(t.rows)
 switch key {
-case "j", "down":
+case "down":
 if t.rowIdx < n-1 {
 t.rowIdx++
 } else {
@@ -259,17 +259,17 @@ t.rows = append(t.rows, kvRow{enabled: true})
 t.rowIdx++
 }
 return true
-case "k", "up":
+case "up":
 if t.rowIdx > 0 {
 t.rowIdx--
 }
 return true
-case "h", "left":
+case "left":
 if t.colIdx > 0 {
 t.colIdx--
 }
 return true
-case "l", "right":
+case "right":
 if t.colIdx < 2 {
 t.colIdx++
 }
