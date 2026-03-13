@@ -2,10 +2,14 @@ package ui
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/user/http-cli/internal/exporter"
 	"github.com/user/http-cli/internal/models"
+	"github.com/user/http-cli/internal/parser"
 )
 
 func (a *App) executeAction(action, _ string) tea.Cmd {
@@ -189,6 +193,45 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			_ = a.store.SaveRequest(context.Background(), a.selectedReq)
 			a.setStatus("Saved")
 		}
+
+	case "export_curl":
+		if a.selectedReq != nil {
+			a.curlExportVal = exporter.ToCurl(a.selectedReq)
+			a.showCurlExport = true
+		}
+
+	case "import_postman":
+		a.promptInput("Postman collection path:", "", func(path string) {
+			reqs, col, err := parser.ParsePostmanCollection(path)
+			if err != nil {
+				a.showNotify("Import failed: "+err.Error(), true)
+				return
+			}
+			for _, req := range reqs {
+				_ = a.store.SaveRequest(context.Background(), req)
+				a.requests = append(a.requests, req)
+			}
+			a.requestList.setRequests(a.requests)
+			name := path
+			if col != nil {
+				name = col.Name
+			}
+			a.showNotify(fmt.Sprintf("Imported %d requests from '%s'", len(reqs), name), false)
+		})
+
+	case "export_postman":
+		a.promptInput("Export filename (.json):", "collection.json", func(path string) {
+			data, err := exporter.ToPostmanCollection("http-cli", a.requests)
+			if err != nil {
+				a.showNotify("Export failed: "+err.Error(), true)
+				return
+			}
+			if err := os.WriteFile(path, data, 0600); err != nil {
+				a.showNotify("Write failed: "+err.Error(), true)
+				return
+			}
+			a.showNotify(fmt.Sprintf("Exported %d requests to '%s'", len(a.requests), path), false)
+		})
 	}
 
 	return nil

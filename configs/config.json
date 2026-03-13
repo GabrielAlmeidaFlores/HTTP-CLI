@@ -163,6 +163,30 @@
         "category": "Requests",
         "visible": true
       },
+      "export_curl": {
+        "keys": [
+          "E"
+        ],
+        "description": "Export cURL",
+        "category": "Requests",
+        "visible": true
+      },
+      "import_postman": {
+        "keys": [
+          "ctrl+i"
+        ],
+        "description": "Import Postman",
+        "category": "Requests",
+        "visible": true
+      },
+      "export_postman": {
+        "keys": [
+          "ctrl+e"
+        ],
+        "description": "Export Postman",
+        "category": "Requests",
+        "visible": true
+      },
       "delete_request": {
         "keys": [
           "d"

@@ -5,6 +5,7 @@ import (
 "fmt"
 "time"
 
+"github.com/atotto/clipboard"
 tea "github.com/charmbracelet/bubbletea"
 "github.com/charmbracelet/lipgloss"
 
@@ -74,6 +75,9 @@ showCurlImport    bool
 curlImportVal     string
 curlImportCursor  int
 curlImportScroll  int
+
+showCurlExport bool
+curlExportVal  string
 
 showNotification  bool
 notificationMsg   string
@@ -158,6 +162,18 @@ break
 }
 if a.showCurlImport {
 cmds = append(cmds, a.handleCurlImportModal(msg))
+break
+}
+if a.showCurlExport {
+key := msg.String()
+if key == "esc" || key == "enter" || key == "q" {
+a.showCurlExport = false
+} else if key == "y" {
+if err := clipboard.WriteAll(a.curlExportVal); err == nil {
+a.setStatus("cURL copied to clipboard ✓")
+}
+a.showCurlExport = false
+}
 break
 }
 if a.showNotification {
@@ -245,6 +261,10 @@ return a.renderCellEditModal()
 
 if a.showCurlImport {
 return a.renderCurlImportModal()
+}
+
+if a.showCurlExport {
+return a.renderCurlExportModal()
 }
 
 if a.showNotification {

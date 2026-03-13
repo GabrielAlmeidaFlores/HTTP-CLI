@@ -326,6 +326,65 @@ func (a *App) renderCurlImportModal() string {
 	return a.renderModalOverlay(body, modalW)
 }
 
+func (a *App) renderCurlExportModal() string {
+	const visibleLines = 8
+
+	modalW := a.width * 3 / 4
+	if modalW > 120 {
+		modalW = 120
+	}
+	if modalW < 50 {
+		modalW = 50
+	}
+	contentW := modalW - 6
+	lineW := contentW - 2
+
+	titleStyle := accentStyle().Bold(true)
+	dim := dimStyle()
+	dimKey := accentStyle().Bold(true)
+
+	runes := []rune(a.curlExportVal)
+	wrapped := wrapRunesIntoLines(runes, lineW)
+
+	scroll := 0
+	start := scroll
+	end := start + visibleLines
+	if end > len(wrapped) {
+		end = len(wrapped)
+	}
+
+	inputStyle := lipgloss.NewStyle().
+		Width(contentW).
+		Height(visibleLines).
+		Padding(0, 1).
+		Background(lipgloss.Color("#1c1c2c")).
+		Foreground(lipgloss.Color("#d7d7d7"))
+
+	var lines []string
+	for i := start; i < end; i++ {
+		lines = append(lines, string(wrapped[i]))
+	}
+
+	totalLines := len(wrapped)
+	scrollInfo := ""
+	if totalLines > visibleLines {
+		scrollInfo = dim.Render(fmt.Sprintf("  (%d lines total)", totalLines))
+	}
+
+	hints := dimKey.Render("y") + dim.Render(" copy to clipboard") + "  " + dimKey.Render("esc") + dim.Render(" close")
+
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render("Export as cURL"),
+		"",
+		inputStyle.Render(strings.Join(lines, "\n")),
+		scrollInfo,
+		"",
+		hints,
+	)
+
+	return a.renderModalOverlay(body, modalW)
+}
+
 func (a *App) renderNotificationModal() string {
 	icon := "✓"
 	borderColor := "#00d700"
