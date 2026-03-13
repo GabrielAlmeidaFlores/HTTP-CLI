@@ -337,8 +337,10 @@ func (t *kvTable) render(width int, insertMode bool) string {
 dim := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 hdrStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#87d7ff"))
 enOn := lipgloss.NewStyle().Foreground(lipgloss.Color("#00af00"))
+enOff := lipgloss.NewStyle().Foreground(lipgloss.Color("#626262"))
 rowBg := lipgloss.NewStyle().Background(lipgloss.Color("#1c1c2c"))
-cellBg := lipgloss.NewStyle().Background(lipgloss.Color("#1c2c4c"))
+cellBg := lipgloss.NewStyle().Background(lipgloss.Color("#005f87")).Bold(true)
+placeholder := lipgloss.NewStyle().Foreground(lipgloss.Color("#444444"))
 
 keyW := 22
 valW := width - 3 - keyW - 4
@@ -355,45 +357,48 @@ isCurrentRow := insertMode && i == t.rowIdx
 
 enStr := enOn.Render("✓")
 if !r.enabled {
-enStr = dim.Render("✗")
+enStr = enOff.Render("✗")
 }
 
-keyStr := padRight(r.key, keyW)
-valStr := truncate(r.value, valW)
+keyDisplay := r.key
+if keyDisplay == "" {
+keyDisplay = placeholder.Render(padRight("…", keyW))
+} else {
+keyDisplay = padRight(r.key, keyW)
+}
+
+valDisplay := r.value
+if valDisplay == "" {
+valDisplay = placeholder.Render(padRight("…", valW))
+} else {
+valDisplay = truncate(r.value, valW)
+}
 
 if isCurrentRow && t.editing {
 if t.colIdx == 1 {
-keyStr = renderEditCursor(t.editVal, t.editCursor, keyW)
-valStr = truncate(r.value, valW)
+keyDisplay = renderEditCursor(t.editVal, t.editCursor, keyW)
 } else if t.colIdx == 2 {
-keyStr = padRight(r.key, keyW)
-valStr = renderEditCursor(t.editVal, t.editCursor, valW)
+valDisplay = renderEditCursor(t.editVal, t.editCursor, valW)
 }
 }
 
 var keyCell, valCell string
 if isCurrentRow && !t.editing {
-if t.colIdx == 0 {
-} else if t.colIdx == 1 {
-keyCell = cellBg.Render(keyStr)
-valCell = valStr
+switch t.colIdx {
+case 0:
+enStr = cellBg.Render(enStr)
+keyCell = keyDisplay
+valCell = valDisplay
+case 1:
+keyCell = cellBg.Width(keyW).Render(padRight(r.key, keyW))
+valCell = valDisplay
+case 2:
+keyCell = keyDisplay
+valCell = cellBg.Width(valW).Render(padRight(r.value, valW))
+}
 } else {
-keyCell = keyStr
-valCell = cellBg.Render(valStr)
-}
-} else if isCurrentRow && t.editing {
-keyCell = keyStr
-valCell = valStr
-} else {
-keyCell = keyStr
-valCell = valStr
-}
-
-if keyCell == "" {
-keyCell = keyStr
-}
-if valCell == "" {
-valCell = valStr
+keyCell = keyDisplay
+valCell = valDisplay
 }
 
 ptr := "  "
