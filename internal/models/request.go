@@ -60,9 +60,24 @@ const (
 	BodyURLEncoded BodyType = "urlencoded"
 )
 
+type FormFieldType string
+
+const (
+	FormFieldText FormFieldType = "text"
+	FormFieldFile FormFieldType = "file"
+)
+
+type FormField struct {
+	Key     string        `json:"key"`
+	Value   string        `json:"value"`
+	Type    FormFieldType `json:"type"`
+	Enabled bool          `json:"enabled"`
+}
+
 type Body struct {
-	Type    BodyType `json:"type"`
-	Content string   `json:"content"`
+	Type     BodyType    `json:"type"`
+	Content  string      `json:"content,omitempty"`
+	FormData []FormField `json:"form_data,omitempty"`
 }
 
 type Request struct {

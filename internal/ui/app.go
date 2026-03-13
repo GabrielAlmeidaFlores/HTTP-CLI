@@ -172,6 +172,9 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 
 	if a.mode == ModeInsert {
 		if key == "esc" {
+			if a.editor.IsSubEditing() {
+				return a.routeKeyToPanel(msg)
+			}
 			a.mode = ModeNormal
 			a.editor.Reset()
 			return nil

@@ -5,7 +5,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -30,17 +34,61 @@ func NewClient(timeoutSeconds int, followRedirects bool, verifySSL bool) *Client
 }
 
 func (c *Client) Execute(ctx context.Context, req *models.Request, envVars map[string]string) (*models.Response, error) {
-	url := interpolate(req.URL, envVars)
-	body := interpolate(req.Body.Content, envVars)
+	rawURL := interpolate(req.URL, envVars)
 
 	var bodyReader io.Reader
-	if body != "" {
+	var autoContentType string
+
+	switch req.Body.Type {
+	case models.BodyFormData:
+		var buf bytes.Buffer
+		w := multipart.NewWriter(&buf)
+		for _, f := range req.Body.FormData {
+			if !f.Enabled {
+				continue
+			}
+			if f.Type == models.FormFieldFile {
+				file, err := os.Open(f.Value)
+				if err != nil {
+					continue
+				}
+				defer file.Close()
+				fw, _ := w.CreateFormFile(f.Key, filepath.Base(f.Value))
+				io.Copy(fw, file) //nolint
+			} else {
+				w.WriteField(f.Key, f.Value) //nolint
+			}
+		}
+		w.Close()
+		bodyReader = &buf
+		autoContentType = w.FormDataContentType()
+	case models.BodyURLEncoded:
+		vals := url.Values{}
+		for _, f := range req.Body.FormData {
+			if f.Enabled {
+				vals.Set(f.Key, f.Value)
+			}
+		}
+		bodyReader = strings.NewReader(vals.Encode())
+		autoContentType = "application/x-www-form-urlencoded"
+	case models.BodyJSON:
+		body := interpolate(req.Body.Content, envVars)
 		bodyReader = strings.NewReader(body)
+		autoContentType = "application/json"
+	case models.BodyRaw:
+		body := interpolate(req.Body.Content, envVars)
+		if body != "" {
+			bodyReader = strings.NewReader(body)
+		}
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, string(req.Method), url, bodyReader)
+	httpReq, err := http.NewRequestWithContext(ctx, string(req.Method), rawURL, bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
+	}
+
+	if autoContentType != "" {
+		httpReq.Header.Set("Content-Type", autoContentType)
 	}
 
 	for _, h := range req.Headers {
