@@ -148,29 +148,23 @@ return nil
 
 func (m *EditorModel) handleURLNavKey(key string) tea.Cmd {
 switch key {
-case "j", "down":
+case "down":
 if m.tableRow < 1 {
 m.tableRow++
 }
-case "k", "up":
+case "up":
 if m.tableRow > 0 {
 m.tableRow--
 }
-case "h", "left":
+case "left":
 if m.tableRow == 0 {
 m.cycleMethod(-1)
 }
-case "l", "right":
+case "right":
 if m.tableRow == 0 {
 m.cycleMethod(1)
 }
-case "enter":
-if m.tableRow == 0 {
-m.cycleMethod(1)
-} else {
-m.startCellEdit(m.request.URL)
-}
-case "i":
+case "enter", "i":
 if m.tableRow == 1 {
 m.startCellEdit(m.request.URL)
 } else {
@@ -183,16 +177,25 @@ return nil
 func (m *EditorModel) handleHeadersNavKey(key string) tea.Cmd {
 n := len(m.request.Headers)
 switch key {
-case "j", "down":
-if m.tableRow < n-1 {
-m.tableRow++
+case "down":
+if m.tableRow >= n-1 {
+m.request.Headers = append(m.request.Headers, models.Header{Enabled: true})
 }
+m.tableRow++
 m.headerIdx = m.tableRow
-case "k", "up":
+case "up":
 if m.tableRow > 0 {
 m.tableRow--
 }
 m.headerIdx = m.tableRow
+case "left":
+if m.tableCol > 1 {
+m.tableCol--
+}
+case "right":
+if m.tableCol < 2 {
+m.tableCol++
+}
 case "tab":
 if m.tableCol == 1 {
 m.tableCol = 2
@@ -200,15 +203,10 @@ m.tableCol = 2
 m.tableCol = 1
 }
 case "enter", "i":
-if n > 0 {
+n2 := len(m.request.Headers)
+if n2 > 0 {
 m.startCellEdit(m.currentCellValue())
 }
-case "n":
-m.request.Headers = append(m.request.Headers, models.Header{Enabled: true})
-m.tableRow = len(m.request.Headers) - 1
-m.headerIdx = m.tableRow
-m.tableCol = 1
-m.startCellEdit("")
 case "d":
 if n > 0 && m.tableRow < n {
 m.request.Headers = append(m.request.Headers[:m.tableRow], m.request.Headers[m.tableRow+1:]...)
@@ -228,16 +226,25 @@ return nil
 func (m *EditorModel) handleQueryNavKey(key string) tea.Cmd {
 n := len(m.request.QueryParams)
 switch key {
-case "j", "down":
-if m.tableRow < n-1 {
-m.tableRow++
+case "down":
+if m.tableRow >= n-1 {
+m.request.QueryParams = append(m.request.QueryParams, models.QueryParam{Enabled: true})
 }
+m.tableRow++
 m.queryIdx = m.tableRow
-case "k", "up":
+case "up":
 if m.tableRow > 0 {
 m.tableRow--
 }
 m.queryIdx = m.tableRow
+case "left":
+if m.tableCol > 1 {
+m.tableCol--
+}
+case "right":
+if m.tableCol < 2 {
+m.tableCol++
+}
 case "tab":
 if m.tableCol == 1 {
 m.tableCol = 2
@@ -245,15 +252,10 @@ m.tableCol = 2
 m.tableCol = 1
 }
 case "enter", "i":
-if n > 0 {
+n2 := len(m.request.QueryParams)
+if n2 > 0 {
 m.startCellEdit(m.currentCellValue())
 }
-case "n":
-m.request.QueryParams = append(m.request.QueryParams, models.QueryParam{Enabled: true})
-m.tableRow = len(m.request.QueryParams) - 1
-m.queryIdx = m.tableRow
-m.tableCol = 1
-m.startCellEdit("")
 case "d":
 if n > 0 && m.tableRow < n {
 m.request.QueryParams = append(m.request.QueryParams[:m.tableRow], m.request.QueryParams[m.tableRow+1:]...)
@@ -276,13 +278,35 @@ n := len(m.request.Body.FormData)
 switch key {
 case "t":
 m.cycleBodyType()
-case "j", "down":
-if (bt == models.BodyFormData || bt == models.BodyURLEncoded) && m.tableRow < n-1 {
+case "down":
+if bt == models.BodyFormData || bt == models.BodyURLEncoded {
+if m.tableRow >= n-1 {
+m.request.Body.FormData = append(m.request.Body.FormData, models.FormField{
+Enabled: true,
+Type:    models.FormFieldText,
+})
+}
 m.tableRow++
 }
-case "k", "up":
+case "up":
 if (bt == models.BodyFormData || bt == models.BodyURLEncoded) && m.tableRow > 0 {
 m.tableRow--
+}
+case "left":
+if bt == models.BodyFormData || bt == models.BodyURLEncoded {
+if m.tableCol > 1 {
+m.tableCol--
+}
+}
+case "right":
+if bt == models.BodyFormData {
+if m.tableCol < 3 {
+m.tableCol++
+}
+} else if bt == models.BodyURLEncoded {
+if m.tableCol < 2 {
+m.tableCol++
+}
 }
 case "tab":
 if bt == models.BodyFormData {
@@ -310,16 +334,6 @@ m.toggleFormDataType()
 } else {
 m.startCellEdit(m.currentCellValue())
 }
-}
-case "n":
-if bt == models.BodyFormData || bt == models.BodyURLEncoded {
-m.request.Body.FormData = append(m.request.Body.FormData, models.FormField{
-Enabled: true,
-Type:    models.FormFieldText,
-})
-m.tableRow = len(m.request.Body.FormData) - 1
-m.tableCol = 1
-m.startCellEdit("")
 }
 case "d":
 if (bt == models.BodyFormData || bt == models.BodyURLEncoded) && n > 0 && m.tableRow < n {
