@@ -68,6 +68,15 @@ func (m *ResponseModel) nextTab() {
 	}
 }
 
+func (m *ResponseModel) prevTab() {
+	for i, t := range responseTabs {
+		if t == m.activeTab {
+			m.activeTab = responseTabs[(i-1+len(responseTabs))%len(responseTabs)]
+			return
+		}
+	}
+}
+
 func (m *ResponseModel) JumpToTab(n int) {
 	if n >= 1 && n <= len(responseTabs) {
 		m.activeTab = responseTabs[n-1]

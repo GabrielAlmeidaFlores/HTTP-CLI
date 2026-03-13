@@ -69,9 +69,9 @@ func (m *EditorModel) handleKey(msg tea.KeyMsg, req *models.Request) tea.Cmd {
 	}
 
 	switch key {
-	case "tab":
+	case "]":
 		m.nextTab()
-	case "shift+tab":
+	case "[":
 		m.prevTab()
 	case "i", "enter":
 		m.startEditing()

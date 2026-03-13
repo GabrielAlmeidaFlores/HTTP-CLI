@@ -34,8 +34,8 @@
     "editor": {
       "insert_mode": { "keys": ["i"], "description": "Edit", "category": "Editor", "visible": true },
       "normal_mode": { "keys": ["esc"], "description": "Normal mode", "category": "Editor", "visible": false },
-      "next_tab": { "keys": ["tab"], "description": "Next tab", "category": "Editor", "visible": true },
-      "prev_tab": { "keys": ["shift+tab"], "description": "Prev tab", "category": "Editor", "visible": true },
+      "next_tab": { "keys": ["]"], "description": "Next tab", "category": "Editor", "visible": true },
+      "prev_tab": { "keys": ["["], "description": "Prev tab", "category": "Editor", "visible": true },
       "execute": { "keys": ["ctrl+e"], "description": "Send request", "category": "Editor", "visible": true },
       "tab_1": { "keys": ["1"], "description": "URL tab", "category": "Editor Tabs", "visible": false },
       "tab_2": { "keys": ["2"], "description": "Headers tab", "category": "Editor Tabs", "visible": false },
@@ -53,7 +53,8 @@
       "save_response": { "keys": ["s"], "description": "Save to file", "category": "Response", "visible": true, "tab": "Body" },
       "scroll_up": { "keys": ["k", "up"], "description": "Scroll up", "category": "Response", "visible": true },
       "scroll_down": { "keys": ["j", "down"], "description": "Scroll down", "category": "Response", "visible": true },
-      "next_tab": { "keys": ["tab"], "description": "Next tab", "category": "Response", "visible": true },
+      "next_tab": { "keys": ["]"], "description": "Next tab", "category": "Response", "visible": true },
+      "prev_tab": { "keys": ["["], "description": "Prev tab", "category": "Response", "visible": true },
       "tab_1": { "keys": ["1"], "description": "Body tab", "category": "Response Tabs", "visible": false },
       "tab_2": { "keys": ["2"], "description": "Headers tab", "category": "Response Tabs", "visible": false },
       "tab_3": { "keys": ["3"], "description": "Info tab", "category": "Response Tabs", "visible": false }

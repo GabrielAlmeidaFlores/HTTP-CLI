@@ -229,6 +229,22 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 	case "prev_panel":
 		a.prevPanel()
 
+	case "next_tab":
+		switch a.focused {
+		case PanelEditor:
+			a.editor.nextTab()
+		case PanelResponse:
+			a.response.nextTab()
+		}
+
+	case "prev_tab":
+		switch a.focused {
+		case PanelEditor:
+			a.editor.prevTab()
+		case PanelResponse:
+			a.response.prevTab()
+		}
+
 	case "focus_panel_1":
 		a.focused = PanelRequestList
 
