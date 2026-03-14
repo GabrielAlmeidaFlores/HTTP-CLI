@@ -469,6 +469,48 @@ func (a *App) renderNotificationModal() string {
 	return overlayCenter(bg, modal, a.width, a.height)
 }
 
+func (a *App) renderVarsModal() string {
+	w := a.width * 2 / 3
+	if w < 60 {
+		w = 60
+	}
+	if w > 100 {
+		w = 100
+	}
+	contentW := w - 6
+
+	name := ""
+	if a.varsCollection != nil {
+		name = a.varsCollection.Name
+	}
+
+	titleStyle := accentStyle(a.theme).Bold(true)
+	dimKey := accentStyle(a.theme).Bold(true)
+	dimDesc := dimStyle(a.theme)
+	hintsRow := a.buildModalHints("vars_modal", dimKey, dimDesc)
+
+	table := a.varsTable.renderWithMaxRows(contentW, true, 10)
+
+	hint := dimStyle(a.theme).Render("Use {{variableName}} in URL, headers, query, body, auth")
+
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render("Variables — "+name),
+		"",
+		hint,
+		"",
+		table,
+		"",
+		hintsRow,
+	)
+
+	modal := modalBorderStyle(a.theme.Primary).
+		Padding(1, 2).
+		Width(w).
+		Render(body)
+
+	return overlayCenter(a.renderBackground(), modal, a.width, a.height)
+}
+
 func (a *App) buildModalHints(panel string, keyStyle, descStyle lipgloss.Style) string {
 	hints := a.keybindMgr.GetHints(panel, "")
 	var parts []string

@@ -81,6 +81,10 @@ type App struct {
 	notificationMsg   string
 	notificationIsErr bool
 
+	showVarsModal   bool
+	varsCollection  *models.Collection
+	varsTable       kvTable
+
 	executing bool
 
 	lastResponse map[string]*models.Response
@@ -183,6 +187,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, a.handleCurlImportModal(msg))
 			break
 		}
+		if a.showVarsModal {
+			cmds = append(cmds, a.handleVarsModal(msg))
+			break
+		}
 		if a.showCurlExport {
 			if binding, ok := a.keybindMgr.Resolve(msg.String(), "curl_export_modal"); ok {
 				switch binding.Action {
@@ -280,6 +288,10 @@ func (a *App) View() string {
 
 	if a.showCurlImport {
 		return a.renderCurlImportModal()
+	}
+
+	if a.showVarsModal {
+		return a.renderVarsModal()
 	}
 
 	if a.showCurlExport {

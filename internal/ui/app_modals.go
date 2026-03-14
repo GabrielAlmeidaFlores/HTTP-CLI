@@ -8,6 +8,7 @@ import (
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/user/http-cli/internal/models"
 )
 
 func (a *App) promptConfirm(msg string, action func()) {
@@ -335,4 +336,87 @@ func (a *App) openResponseInEditor() tea.Cmd {
 		}
 		return StatusMsg{Text: ""}
 	})
+}
+
+func (a *App) openVarsModal(col *models.Collection) {
+a.varsCollection = col
+rows := make([]kvRow, 0, len(col.Variables))
+for k, v := range col.Variables {
+rows = append(rows, kvRow{enabled: true, key: k, value: v})
+}
+a.varsTable = newKvTable(rows, a.keybindMgr, a.theme)
+a.varsTable.colIdx = 1
+a.showVarsModal = true
+}
+
+func (a *App) handleVarsModal(msg tea.KeyMsg) tea.Cmd {
+key := msg.String()
+
+if binding, ok := a.keybindMgr.Resolve(key, "vars_modal"); ok {
+switch binding.Action {
+case "close":
+a.saveVarsFromTable()
+a.showVarsModal = false
+return nil
+case "new_row":
+a.varsTable.rows = append(a.varsTable.rows, kvRow{enabled: true})
+a.varsTable.rowIdx = len(a.varsTable.rows) - 1
+a.varsTable.colIdx = 1
+return nil
+case "delete_row":
+if len(a.varsTable.rows) > 0 {
+i := a.varsTable.rowIdx
+a.varsTable.rows = append(a.varsTable.rows[:i], a.varsTable.rows[i+1:]...)
+if a.varsTable.rowIdx >= len(a.varsTable.rows) && a.varsTable.rowIdx > 0 {
+a.varsTable.rowIdx--
+}
+a.saveVarsFromTable()
+}
+return nil
+case "edit_cell":
+if len(a.varsTable.rows) == 0 {
+return nil
+}
+row := a.varsTable.rows[a.varsTable.rowIdx]
+isKey := a.varsTable.colIdx == 1
+title := "Value"
+val := row.value
+if isKey {
+title = "Key"
+val = row.key
+}
+a.cellEditTitle = title
+a.cellEditVal = val
+a.cellEditCursor = len([]rune(val))
+a.cellEditCommit = func(newVal string) {
+if a.varsTable.rowIdx < len(a.varsTable.rows) {
+if isKey {
+a.varsTable.rows[a.varsTable.rowIdx].key = newVal
+} else {
+a.varsTable.rows[a.varsTable.rowIdx].value = newVal
+}
+a.saveVarsFromTable()
+}
+}
+a.showCellEdit = true
+return nil
+}
+}
+
+a.varsTable.handleKey(key)
+return nil
+}
+
+func (a *App) saveVarsFromTable() {
+if a.varsCollection == nil {
+return
+}
+vars := make(map[string]string)
+for _, row := range a.varsTable.rows {
+if row.key != "" {
+vars[row.key] = row.value
+}
+}
+a.varsCollection.Variables = vars
+_ = a.store.SaveCollection(context.Background(), a.varsCollection)
 }

@@ -665,6 +665,32 @@
         "visible": true
       }
     },
+    "vars_modal": {
+      "new_row": {
+        "keys": ["n"],
+        "description": "New variable",
+        "category": "Variables",
+        "visible": true
+      },
+      "delete_row": {
+        "keys": ["d"],
+        "description": "Delete",
+        "category": "Variables",
+        "visible": true
+      },
+      "edit_cell": {
+        "keys": ["e"],
+        "description": "Edit",
+        "category": "Variables",
+        "visible": true
+      },
+      "close": {
+        "keys": ["esc", "q"],
+        "description": "Close",
+        "category": "Variables",
+        "visible": true
+      }
+    },
     "collection_list": {
       "nav_hint": {
         "keys": ["↑↓"],
@@ -723,6 +749,12 @@
       "add_request_to_collection": {
         "keys": ["a"],
         "description": "Add request",
+        "category": "Collections",
+        "visible": true
+      },
+      "edit_variables": {
+        "keys": ["v"],
+        "description": "Variables",
         "category": "Collections",
         "visible": true
       }

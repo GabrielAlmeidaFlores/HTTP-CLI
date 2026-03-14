@@ -328,6 +328,13 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			})
 		}
 
+	case "edit_variables":
+		if col := a.collectionList.selectedCollection(); col != nil {
+			a.openVarsModal(col)
+		} else {
+			a.setStatus("Select a collection first")
+		}
+
 	case "collection_select":
 		node := a.collectionList.selectedNode()
 		if node == nil {
