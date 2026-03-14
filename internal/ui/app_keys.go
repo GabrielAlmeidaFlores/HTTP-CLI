@@ -49,6 +49,10 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 	}
 
 	if found {
+		if binding.Action == "cancel" && a.focused == PanelRequestList {
+			a.focused = PanelEditor
+			return nil
+		}
 		return a.executeAction(binding.Action, binding.Panel)
 	}
 
@@ -105,6 +109,8 @@ func (a *App) handleResponseKey(msg tea.KeyMsg) tea.Cmd {
 		a.nextPanel()
 	case "prev_panel":
 		a.prevPanel()
+	case "cancel":
+		a.focused = PanelEditor
 	default:
 		return a.executeAction(binding.Action, binding.Panel)
 	}
@@ -161,6 +167,12 @@ func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 		if a.selectedReq != nil && !a.editor.IsSubEditing() && a.editor.CurrentCellIsText() {
 			a.openCellEdit()
 		}
+	case "normal_mode":
+		if a.editor.IsSubEditing() {
+			a.editor.CancelSubEdit()
+		} else {
+			a.focused = PanelRequestList
+		}
 	default:
 		if a.selectedReq != nil {
 			return a.editor.handleKey(msg, a.selectedReq)
@@ -177,6 +189,10 @@ func (a *App) handleCollectionListKey(msg tea.KeyMsg) tea.Cmd {
 		binding, found = a.keybindMgr.Resolve(key, "global")
 	}
 	if found {
+		if binding.Action == "cancel" {
+			a.focused = PanelRequestList
+			return nil
+		}
 		return a.executeAction(binding.Action, binding.Panel)
 	}
 	return nil
