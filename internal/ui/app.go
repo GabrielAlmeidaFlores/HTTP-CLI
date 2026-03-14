@@ -199,6 +199,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			break
 		}
 		cmds = append(cmds, a.handleKey(msg))
+		if a.focused == PanelEditor && a.selectedReq != nil {
+			a.collectionList.rebuild()
+		}
 
 	case RequestsLoadedMsg:
 		a.requests = msg.Requests
@@ -304,6 +307,16 @@ func (a *App) selectRequest(req *models.Request) {
 	a.editor.setRequest(req)
 	a.currentResp = nil
 	a.response.setResponse(nil)
+}
+
+func (a *App) selectCollectionNode() {
+	node := a.collectionList.selectedNode()
+	if node == nil || node.kind != colNodeRequest {
+		return
+	}
+	if req, ok := a.collectionList.requestIndex[node.requestID]; ok {
+		a.selectRequest(req)
+	}
 }
 
 func (a *App) listWidth() int {

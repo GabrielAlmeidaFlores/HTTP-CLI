@@ -173,12 +173,6 @@
         "category": "Requests",
         "visible": true
       },
-      "export_postman": {
-        "keys": ["X"],
-        "description": "Export Postman",
-        "category": "Requests",
-        "visible": true
-      },
       "delete_request": {
         "keys": ["d"],
         "description": "Delete request",
@@ -710,7 +704,7 @@
       },
       "import_collection": {
         "keys": ["P"],
-        "description": "Import Postman",
+        "description": "Import collection",
         "category": "Collections",
         "visible": true
       },

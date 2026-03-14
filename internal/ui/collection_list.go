@@ -24,6 +24,7 @@ type colNode struct {
 	depth      int
 	expandKey  string
 	requestID  string
+	method     string
 	collection *models.Collection
 	label      string
 }
@@ -115,15 +116,18 @@ func (m *CollectionListModel) appendFolderNodes(col *models.Collection, folder *
 }
 
 func (m *CollectionListModel) requestNode(rid string, col *models.Collection, depth int) colNode {
+	method := ""
 	label := rid
 	if req, ok := m.requestIndex[rid]; ok {
-		label = fmt.Sprintf("%-7s %s", string(req.Method), req.Name)
+		method = string(req.Method)
+		label = req.Name
 	}
 	return colNode{
 		kind:       colNodeRequest,
 		depth:      depth,
 		expandKey:  "",
 		requestID:  rid,
+		method:     method,
 		collection: col,
 		label:      label,
 	}
@@ -249,21 +253,29 @@ func (m *CollectionListModel) renderNode(node colNode, selected bool, theme conf
 
 	label := node.label
 	maxLen := m.width - len([]rune(indent)) - len([]rune(arrow)) - 6
-	if maxLen > 0 && len([]rune(label)) > maxLen {
-		label = string([]rune(label)[:maxLen-1]) + "…"
-	}
 
-	var textStyle lipgloss.Style
+	var rendered string
 	switch node.kind {
+	case colNodeRequest:
+		methodStr := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color(methodColor(node.method, theme))).
+			Render(fmt.Sprintf("%-7s", node.method))
+		if maxLen > 0 && len([]rune(label)) > maxLen-8 {
+			label = string([]rune(label)[:maxLen-9]) + "…"
+		}
+		rendered = indent + arrow + methodStr + " " + label
 	case colNodeCollection:
-		textStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(theme.Primary))
+		if maxLen > 0 && len([]rune(label)) > maxLen {
+			label = string([]rune(label)[:maxLen-1]) + "…"
+		}
+		rendered = indent + lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(theme.Primary)).Render(arrow+label)
 	case colNodeFolder:
-		textStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Secondary))
-	default:
-		textStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(theme.ValueFg))
+		if maxLen > 0 && len([]rune(label)) > maxLen {
+			label = string([]rune(label)[:maxLen-1]) + "…"
+		}
+		rendered = indent + lipgloss.NewStyle().Foreground(lipgloss.Color(theme.Secondary)).Render(arrow+label)
 	}
-
-	rendered := indent + textStyle.Render(arrow+label)
 
 	if selected {
 		return lipgloss.NewStyle().

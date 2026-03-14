@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
@@ -177,6 +176,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			}
 		case PanelCollectionList:
 			a.collectionList.moveDown()
+			a.selectCollectionNode()
 		}
 
 	case "up":
@@ -188,6 +188,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			}
 		case PanelCollectionList:
 			a.collectionList.moveUp()
+			a.selectCollectionNode()
 		}
 
 	case "goto_top":
@@ -201,6 +202,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		case PanelCollectionList:
 			a.collectionList.selectedIdx = 0
 			a.collectionList.scrollOffset = 0
+			a.selectCollectionNode()
 		}
 
 	case "goto_bottom":
@@ -217,11 +219,11 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			if n := len(a.collectionList.visible); n > 0 {
 				a.collectionList.selectedIdx = n - 1
 				a.collectionList.ensureVisible()
+				a.selectCollectionNode()
 			}
 		}
 
 	case "cancel", "help", "left", "right":
-		// global/navigation actions handled contextually in modal/search handlers; no-op at panel level
 
 	case "copy_body":
 		body := a.response.FormattedBody()
@@ -260,20 +262,6 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			a.setStatus("Select a request first")
 		}
 
-	case "export_postman":
-		a.promptInput("Export filename (.json):", "collection.json", func(path string) {
-			data, err := exporter.ToPostmanCollection("http-cli", a.requests)
-			if err != nil {
-				a.showNotify("Export failed: "+err.Error(), true)
-				return
-			}
-			if err := os.WriteFile(path, data, 0600); err != nil {
-				a.showNotify("Write failed: "+err.Error(), true)
-				return
-			}
-			a.showNotify(fmt.Sprintf("Exported %d requests to '%s'", len(a.requests), path), false)
-		})
-
 	case "new_collection":
 		a.promptInput("Collection name:", "New Collection", func(name string) {
 			col := &models.Collection{
@@ -289,7 +277,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		})
 
 	case "import_collection":
-		a.promptInput("Postman collection path:", "", func(path string) {
+		a.promptInput("Collection path (.json):", "", func(path string) {
 			reqs, col, err := parser.ParsePostmanCollection(path)
 			if err != nil {
 				a.showNotify("Import failed: "+err.Error(), true)
@@ -302,9 +290,6 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			a.requestList.setRequests(a.requests)
 			a.collectionList.setRequests(a.requests)
 			if col != nil {
-				for _, req := range reqs {
-					col.RequestIDs = append(col.RequestIDs, req.ID)
-				}
 				_ = a.store.SaveCollection(context.Background(), col)
 				a.collections = append(a.collections, col)
 				a.collectionList.setCollections(a.collections)
