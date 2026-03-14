@@ -82,6 +82,8 @@ type App struct {
 	notificationIsErr bool
 
 	executing bool
+
+	lastResponse map[string]*models.Response
 }
 
 type RequestsLoadedMsg struct{ Requests []*models.Request }
@@ -99,15 +101,16 @@ func NewApp(cfg *config.Config, store RequestStore, httpClient HTTPExecutor, par
 	theme := cfg.UI.Theme
 
 	app := &App{
-		cfg:         cfg,
-		keybindMgr:  km,
-		store:       store,
-		httpClient:  httpClient,
-		parseCurl:   parseCurl,
-		theme:       theme,
-		focused:     PanelRequestList,
-		requests:    make([]*models.Request, 0),
-		collections: make([]*models.Collection, 0),
+		cfg:          cfg,
+		keybindMgr:   km,
+		store:        store,
+		httpClient:   httpClient,
+		parseCurl:    parseCurl,
+		theme:        theme,
+		focused:      PanelRequestList,
+		requests:     make([]*models.Request, 0),
+		collections:  make([]*models.Collection, 0),
+		lastResponse: make(map[string]*models.Response),
 	}
 
 	app.requestList = newRequestListModel(km)
@@ -219,6 +222,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.executing = false
 		a.currentResp = msg.Response
 		a.response.setResponse(msg.Response)
+		if msg.Response.RequestID != "" {
+			a.lastResponse[msg.Response.RequestID] = msg.Response
+		}
 		_ = a.store.AddHistory(context.Background(), msg.Response)
 		a.setStatus(fmt.Sprintf("%d %s  %dms  %s",
 			msg.Response.Status, msg.Response.StatusText,
@@ -305,8 +311,13 @@ func (a *App) setStatus(text string) {
 func (a *App) selectRequest(req *models.Request) {
 	a.selectedReq = req
 	a.editor.setRequest(req)
-	a.currentResp = nil
-	a.response.setResponse(nil)
+	if last, ok := a.lastResponse[req.ID]; ok {
+		a.currentResp = last
+		a.response.setResponse(last)
+	} else {
+		a.currentResp = nil
+		a.response.setResponse(nil)
+	}
 }
 
 func (a *App) selectCollectionNode() {
