@@ -161,7 +161,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		editorH := a.mainHeight() / 2
 		responseH := a.mainHeight() - editorH
 		listH := a.mainHeight()
-		reqListH := listH * 6 / 10
+		reqListH := listH / 2
 		colListH := listH - reqListH
 		lw := a.listWidth() - 2
 		mw := a.mainPanelWidth() - 2

@@ -117,6 +117,7 @@ func ParsePostmanCollection(path string) ([]*models.Request, *models.Collection,
 	}
 
 	collection := &models.Collection{
+		ID:         nextParseID(),
 		Name:       col.Info.Name,
 		Variables:  make(map[string]string),
 		RequestIDs: topLevelIDs,

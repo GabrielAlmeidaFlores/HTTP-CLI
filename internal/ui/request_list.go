@@ -42,13 +42,19 @@ func (m *RequestListModel) setFilter(q string) {
 }
 
 func (m *RequestListModel) applyFilter() {
+	standalone := make([]*models.Request, 0, len(m.requests))
+	for _, r := range m.requests {
+		if r.CollectionID == "" {
+			standalone = append(standalone, r)
+		}
+	}
 	if m.filter == "" {
-		m.filtered = m.requests
+		m.filtered = standalone
 		return
 	}
 	q := strings.ToLower(m.filter)
 	m.filtered = make([]*models.Request, 0)
-	for _, r := range m.requests {
+	for _, r := range standalone {
 		if strings.Contains(strings.ToLower(r.Name), q) ||
 			strings.Contains(strings.ToLower(r.URL), q) {
 			m.filtered = append(m.filtered, r)

@@ -137,8 +137,9 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 				a.requestList.setRequests(a.requests)
 				a.collectionList.setRequests(a.requests)
 				if a.selectedReq != nil && a.selectedReq.ID == req.ID {
-					if len(a.requests) > 0 {
-						a.selectRequest(a.requests[0])
+					visible := a.requestList.filtered
+					if len(visible) > 0 {
+						a.selectRequest(visible[0])
 					} else {
 						a.selectedReq = nil
 					}
@@ -284,6 +285,9 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 				return
 			}
 			for _, req := range reqs {
+				if col != nil {
+					req.CollectionID = col.ID
+				}
 				_ = a.store.SaveRequest(context.Background(), req)
 				a.requests = append(a.requests, req)
 			}
@@ -300,20 +304,54 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		})
 
 	case "delete_collection":
-		if col := a.collectionList.selectedCollection(); col != nil {
-			colToDelete := col
-			a.promptConfirm("Delete collection '"+colToDelete.Name+"'?", func() {
-				_ = a.store.DeleteCollection(context.Background(), colToDelete.ID)
-				for i, c := range a.collections {
-					if c.ID == colToDelete.ID {
-						a.collections = append(a.collections[:i], a.collections[i+1:]...)
+		node := a.collectionList.selectedNode()
+		if node == nil {
+			break
+		}
+		if node.kind == colNodeRequest {
+			req, ok := a.collectionList.requestIndex[node.requestID]
+			if !ok {
+				break
+			}
+			reqToDelete := req
+			col := node.collection
+			a.promptConfirm("Delete request '"+reqToDelete.Name+"'?", func() {
+				_ = a.store.DeleteRequest(context.Background(), reqToDelete.ID)
+				for i, r := range a.requests {
+					if r.ID == reqToDelete.ID {
+						a.requests = append(a.requests[:i], a.requests[i+1:]...)
 						break
 					}
 				}
-				a.collectionList.setCollections(a.collections)
-				a.setStatus("Deleted: " + colToDelete.Name)
+				col.RequestIDs = removeStringSlice(col.RequestIDs, reqToDelete.ID)
+				removeRequestFromFolders(col.Folders, reqToDelete.ID)
+				_ = a.store.SaveCollection(context.Background(), col)
+				a.requestList.setRequests(a.requests)
+				a.collectionList.setRequests(a.requests)
+				a.collectionList.rebuild()
+				if a.selectedReq != nil && a.selectedReq.ID == reqToDelete.ID {
+					a.selectedReq = nil
+				}
+				a.setStatus("Deleted: " + reqToDelete.Name)
 			})
+			break
 		}
+		col := a.collectionList.selectedCollection()
+		if col == nil {
+			break
+		}
+		colToDelete := col
+		a.promptConfirm("Delete collection '"+colToDelete.Name+"'?", func() {
+			_ = a.store.DeleteCollection(context.Background(), colToDelete.ID)
+			for i, c := range a.collections {
+				if c.ID == colToDelete.ID {
+					a.collections = append(a.collections[:i], a.collections[i+1:]...)
+					break
+				}
+			}
+			a.collectionList.setCollections(a.collections)
+			a.setStatus("Deleted: " + colToDelete.Name)
+		})
 
 	case "rename_collection":
 		if col := a.collectionList.selectedCollection(); col != nil {
@@ -351,30 +389,34 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		}
 
 	case "add_request_to_collection":
-		if a.selectedReq != nil {
-			if col := a.collectionList.selectedCollection(); col != nil {
-				req := a.selectedReq
-				alreadyIn := false
-				for _, rid := range col.RequestIDs {
-					if rid == req.ID {
-						alreadyIn = true
-						break
-					}
-				}
-				if !alreadyIn {
-					req.CollectionID = col.ID
-					col.RequestIDs = append(col.RequestIDs, req.ID)
-					_ = a.store.SaveRequest(context.Background(), req)
-					_ = a.store.SaveCollection(context.Background(), col)
-					a.collectionList.setRequests(a.requests)
-					a.setStatus("Added '" + req.Name + "' to '" + col.Name + "'")
-				} else {
-					a.setStatus("Request already in collection")
-				}
-			} else {
-				a.setStatus("Select a collection first")
-			}
+		col := a.collectionList.selectedCollection()
+		if col == nil {
+			a.setStatus("Select a collection first")
+			break
 		}
+		targetCol := col
+		a.promptInput("Request name:", "New Request", func(name string) {
+			req := &models.Request{
+				Name:         name,
+				Method:       models.MethodGET,
+				URL:          "",
+				Headers:      []models.Header{},
+				QueryParams:  []models.QueryParam{},
+				Body:         models.Body{Type: models.BodyNone},
+				Auth:         models.Auth{Type: models.AuthNone},
+				CollectionID: targetCol.ID,
+			}
+			_ = a.store.SaveRequest(context.Background(), req)
+			a.requests = append(a.requests, req)
+			targetCol.RequestIDs = append(targetCol.RequestIDs, req.ID)
+			_ = a.store.SaveCollection(context.Background(), targetCol)
+			a.requestList.setRequests(a.requests)
+			a.collectionList.setRequests(a.requests)
+			a.collectionList.rebuild()
+			a.selectRequest(req)
+			a.focused = PanelEditor
+			a.setStatus("Created '" + name + "' in '" + targetCol.Name + "'")
+		})
 	}
 
 	return nil
@@ -452,4 +494,21 @@ func (a *App) executeCollectionRequest() tea.Cmd {
 		}
 		return ResponseReceivedMsg{Response: resp}
 	}
+}
+
+func removeStringSlice(slice []string, val string) []string {
+out := slice[:0]
+for _, s := range slice {
+if s != val {
+out = append(out, s)
+}
+}
+return out
+}
+
+func removeRequestFromFolders(folders []models.Folder, id string) {
+for i := range folders {
+folders[i].RequestIDs = removeStringSlice(folders[i].RequestIDs, id)
+removeRequestFromFolders(folders[i].Folders, id)
+}
 }

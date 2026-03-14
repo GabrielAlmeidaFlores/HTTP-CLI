@@ -156,50 +156,74 @@
     },
     "request_list": {
       "new_request": {
-        "keys": ["n"],
+        "keys": [
+          "n"
+        ],
         "description": "New request",
         "category": "Requests",
         "visible": true
       },
       "import_curl": {
-        "keys": ["I"],
+        "keys": [
+          "I"
+        ],
         "description": "Import cURL",
         "category": "Requests",
         "visible": true
       },
       "export_curl": {
-        "keys": ["E"],
+        "keys": [
+          "E"
+        ],
         "description": "Export cURL",
         "category": "Requests",
         "visible": true
       },
       "delete_request": {
-        "keys": ["d"],
+        "keys": [
+          "d"
+        ],
         "description": "Delete request",
         "category": "Requests",
         "visible": true
       },
       "duplicate_request": {
-        "keys": ["y"],
+        "keys": [
+          "y"
+        ],
         "description": "Duplicate",
         "category": "Requests",
         "visible": true
       },
       "rename_request": {
-        "keys": ["r"],
+        "keys": [
+          "r"
+        ],
         "description": "Rename",
         "category": "Requests",
         "visible": true
       },
       "select_request": {
-        "keys": ["enter"],
+        "keys": [
+          "enter"
+        ],
         "description": "Open request",
         "category": "Requests",
         "visible": true
       },
       "execute_request": {
-        "keys": ["ctrl+e"],
+        "keys": [
+          "ctrl+e"
+        ],
         "description": "Send request",
+        "category": "Requests",
+        "visible": true
+      },
+      "add_request_to_collection": {
+        "keys": [
+          "a"
+        ],
+        "description": "Add to collection",
         "category": "Requests",
         "visible": true
       }
@@ -464,85 +488,115 @@
     },
     "response": {
       "open_viewer": {
-        "keys": ["v"],
+        "keys": [
+          "v"
+        ],
         "description": "Open vim viewer",
         "category": "Response",
         "visible": true
       },
       "copy_body": {
-        "keys": ["y"],
+        "keys": [
+          "y"
+        ],
         "description": "Copy response",
         "category": "Response",
         "visible": true
       },
       "execute": {
-        "keys": ["ctrl+e"],
+        "keys": [
+          "ctrl+e"
+        ],
         "description": "Send request",
         "category": "Response",
         "visible": false
       },
       "next_tab": {
-        "keys": ["l"],
+        "keys": [
+          "l"
+        ],
         "description": "Next tab",
         "category": "Response",
         "visible": true
       },
       "prev_tab": {
-        "keys": ["h"],
+        "keys": [
+          "h"
+        ],
         "description": "Prev tab",
         "category": "Response",
         "visible": false
       },
       "scroll_down": {
-        "keys": ["j", "down"],
+        "keys": [
+          "j",
+          "down"
+        ],
         "description": "Scroll down",
         "category": "Response",
         "visible": false
       },
       "scroll_up": {
-        "keys": ["k", "up"],
+        "keys": [
+          "k",
+          "up"
+        ],
         "description": "Scroll up",
         "category": "Response",
         "visible": false
       },
       "scroll_top": {
-        "keys": ["g"],
+        "keys": [
+          "g"
+        ],
         "description": "Top",
         "category": "Response",
         "visible": false
       },
       "scroll_bottom": {
-        "keys": ["G"],
+        "keys": [
+          "G"
+        ],
         "description": "Bottom",
         "category": "Response",
         "visible": false
       },
       "half_page_down": {
-        "keys": ["ctrl+d"],
+        "keys": [
+          "ctrl+d"
+        ],
         "description": "Half page down",
         "category": "Response",
         "visible": false
       },
       "half_page_up": {
-        "keys": ["ctrl+u"],
+        "keys": [
+          "ctrl+u"
+        ],
         "description": "Half page up",
         "category": "Response",
         "visible": false
       },
       "tab_1": {
-        "keys": ["1"],
+        "keys": [
+          "1"
+        ],
         "description": "Body tab",
         "category": "Response",
         "visible": false
       },
       "tab_2": {
-        "keys": ["2"],
+        "keys": [
+          "2"
+        ],
         "description": "Headers tab",
         "category": "Response",
         "visible": false
       },
       "tab_3": {
-        "keys": ["3"],
+        "keys": [
+          "3"
+        ],
         "description": "Info tab",
         "category": "Response",
         "visible": false
@@ -550,13 +604,18 @@
     },
     "confirm_modal": {
       "confirm": {
-        "keys": ["enter"],
+        "keys": [
+          "enter"
+        ],
         "description": "Confirm",
         "category": "Confirm",
         "visible": true
       },
       "cancel": {
-        "keys": ["n", "esc"],
+        "keys": [
+          "n",
+          "esc"
+        ],
         "description": "Cancel",
         "category": "Confirm",
         "visible": true
@@ -564,13 +623,17 @@
     },
     "input_modal": {
       "confirm": {
-        "keys": ["enter"],
+        "keys": [
+          "enter"
+        ],
         "description": "Confirm",
         "category": "Input",
         "visible": true
       },
       "cancel": {
-        "keys": ["esc"],
+        "keys": [
+          "esc"
+        ],
         "description": "Cancel",
         "category": "Input",
         "visible": true
@@ -667,25 +730,34 @@
     },
     "vars_modal": {
       "new_row": {
-        "keys": ["n"],
+        "keys": [
+          "n"
+        ],
         "description": "New variable",
         "category": "Variables",
         "visible": true
       },
       "delete_row": {
-        "keys": ["d"],
+        "keys": [
+          "d"
+        ],
         "description": "Delete",
         "category": "Variables",
         "visible": true
       },
       "edit_cell": {
-        "keys": ["e"],
+        "keys": [
+          "e"
+        ],
         "description": "Edit",
         "category": "Variables",
         "visible": true
       },
       "close": {
-        "keys": ["esc", "q"],
+        "keys": [
+          "esc",
+          "q"
+        ],
         "description": "Close",
         "category": "Variables",
         "visible": true
@@ -693,67 +765,90 @@
     },
     "collection_list": {
       "nav_hint": {
-        "keys": ["↑↓"],
+        "keys": [
+          "\u2191\u2193"
+        ],
         "description": "Navigate",
         "category": "Collections",
         "visible": true
       },
       "collection_select": {
-        "keys": ["enter", "space"],
+        "keys": [
+          "enter",
+          "space"
+        ],
         "description": "Expand/open",
         "category": "Collections",
         "visible": true
       },
       "execute_collection_request": {
-        "keys": ["ctrl+e"],
+        "keys": [
+          "ctrl+e"
+        ],
         "description": "Execute request",
         "category": "Collections",
         "visible": true
       },
       "import_curl": {
-        "keys": ["I"],
+        "keys": [
+          "I"
+        ],
         "description": "Import cURL",
         "category": "Collections",
         "visible": true
       },
       "export_curl": {
-        "keys": ["E"],
+        "keys": [
+          "E"
+        ],
         "description": "Export cURL",
         "category": "Collections",
         "visible": true
       },
       "new_collection": {
-        "keys": ["n"],
+        "keys": [
+          "n"
+        ],
         "description": "New collection",
         "category": "Collections",
         "visible": true
       },
       "import_collection": {
-        "keys": ["P"],
+        "keys": [
+          "P"
+        ],
         "description": "Import collection",
         "category": "Collections",
         "visible": true
       },
       "delete_collection": {
-        "keys": ["d"],
+        "keys": [
+          "d"
+        ],
         "description": "Delete",
         "category": "Collections",
         "visible": true
       },
       "rename_collection": {
-        "keys": ["r"],
+        "keys": [
+          "r"
+        ],
         "description": "Rename",
         "category": "Collections",
         "visible": true
       },
       "add_request_to_collection": {
-        "keys": ["a"],
+        "keys": [
+          "a"
+        ],
         "description": "Add request",
         "category": "Collections",
         "visible": true
       },
       "edit_variables": {
-        "keys": ["v"],
+        "keys": [
+          "v"
+        ],
         "description": "Variables",
         "category": "Collections",
         "visible": true
