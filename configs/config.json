@@ -144,85 +144,67 @@
         "description": "Response panel",
         "category": "Panels",
         "visible": true
+      },
+      "focus_panel_4": {
+        "keys": [
+          "4"
+        ],
+        "description": "Collections panel",
+        "category": "Panels",
+        "visible": true
       }
     },
     "request_list": {
       "new_request": {
-        "keys": [
-          "n"
-        ],
+        "keys": ["n"],
         "description": "New request",
         "category": "Requests",
         "visible": true
       },
       "import_curl": {
-        "keys": [
-          "I"
-        ],
+        "keys": ["I"],
         "description": "Import cURL",
         "category": "Requests",
         "visible": true
       },
       "export_curl": {
-        "keys": [
-          "E"
-        ],
+        "keys": ["E"],
         "description": "Export cURL",
         "category": "Requests",
         "visible": true
       },
-      "import_postman": {
-        "keys": [
-          "P"
-        ],
-        "description": "Import Postman",
-        "category": "Requests",
-        "visible": true
-      },
       "export_postman": {
-        "keys": [
-          "X"
-        ],
+        "keys": ["X"],
         "description": "Export Postman",
         "category": "Requests",
         "visible": true
       },
       "delete_request": {
-        "keys": [
-          "d"
-        ],
+        "keys": ["d"],
         "description": "Delete request",
         "category": "Requests",
         "visible": true
       },
       "duplicate_request": {
-        "keys": [
-          "y"
-        ],
+        "keys": ["y"],
         "description": "Duplicate",
         "category": "Requests",
         "visible": true
       },
       "rename_request": {
-        "keys": [
-          "r"
-        ],
+        "keys": ["r"],
         "description": "Rename",
         "category": "Requests",
         "visible": true
       },
       "select_request": {
-        "keys": [
-          "enter"
-        ],
+        "keys": ["enter"],
         "description": "Open request",
         "category": "Requests",
         "visible": true
       },
       "execute_request": {
-        "keys": [
-          "ctrl+e"
-        ],
+        "keys": ["ctrl+e"],
         "description": "Send request",
         "category": "Requests",
         "visible": true
@@ -572,6 +554,34 @@
         "visible": false
       }
     },
+    "confirm_modal": {
+      "confirm": {
+        "keys": ["enter"],
+        "description": "Confirm",
+        "category": "Confirm",
+        "visible": true
+      },
+      "cancel": {
+        "keys": ["n", "esc"],
+        "description": "Cancel",
+        "category": "Confirm",
+        "visible": true
+      }
+    },
+    "input_modal": {
+      "confirm": {
+        "keys": ["enter"],
+        "description": "Confirm",
+        "category": "Input",
+        "visible": true
+      },
+      "cancel": {
+        "keys": ["esc"],
+        "description": "Cancel",
+        "category": "Input",
+        "visible": true
+      }
+    },
     "cell_edit_modal": {
       "confirm_exit": {
         "keys": [
@@ -652,10 +662,74 @@
       },
       "close": {
         "keys": [
-          "esc"
+          "esc",
+          "enter",
+          "q"
         ],
         "description": "Close",
         "category": "cURL Export",
+        "visible": true
+      }
+    },
+    "collection_list": {
+      "nav_hint": {
+        "keys": ["↑↓"],
+        "description": "Navigate",
+        "category": "Collections",
+        "visible": true
+      },
+      "collection_select": {
+        "keys": ["enter", "space"],
+        "description": "Expand/open",
+        "category": "Collections",
+        "visible": true
+      },
+      "execute_collection_request": {
+        "keys": ["ctrl+e"],
+        "description": "Execute request",
+        "category": "Collections",
+        "visible": true
+      },
+      "import_curl": {
+        "keys": ["I"],
+        "description": "Import cURL",
+        "category": "Collections",
+        "visible": true
+      },
+      "export_curl": {
+        "keys": ["E"],
+        "description": "Export cURL",
+        "category": "Collections",
+        "visible": true
+      },
+      "new_collection": {
+        "keys": ["n"],
+        "description": "New collection",
+        "category": "Collections",
+        "visible": true
+      },
+      "import_collection": {
+        "keys": ["P"],
+        "description": "Import Postman",
+        "category": "Collections",
+        "visible": true
+      },
+      "delete_collection": {
+        "keys": ["d"],
+        "description": "Delete",
+        "category": "Collections",
+        "visible": true
+      },
+      "rename_collection": {
+        "keys": ["r"],
+        "description": "Rename",
+        "category": "Collections",
+        "visible": true
+      },
+      "add_request_to_collection": {
+        "keys": ["a"],
+        "description": "Add request",
+        "category": "Collections",
         "visible": true
       }
     }

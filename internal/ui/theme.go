@@ -69,4 +69,3 @@ func modalWidth(screenW int) int {
 	}
 	return w
 }
-

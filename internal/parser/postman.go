@@ -5,18 +5,33 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"github.com/user/http-cli/internal/models"
 )
 
+var parseIDCounter int64
+
+func nextParseID() string {
+	n := atomic.AddInt64(&parseIDCounter, 1)
+	return fmt.Sprintf("%d_%d", time.Now().UnixNano(), n)
+}
+
 type postmanCollection struct {
-	Info  postmanInfo   `json:"info"`
-	Item  []postmanItem `json:"item"`
+	Info     postmanInfo       `json:"info"`
+	Item     []postmanItem     `json:"item"`
+	Variable []postmanVariable `json:"variable"`
 }
 
 type postmanInfo struct {
 	Name   string `json:"name"`
 	Schema string `json:"schema"`
+}
+
+type postmanVariable struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type postmanItem struct {
@@ -63,7 +78,7 @@ type postmanBody struct {
 }
 
 type postmanAuth struct {
-	Type   string `json:"type"`
+	Type   string            `json:"type"`
 	Basic  []postmanAuthItem `json:"basic"`
 	Bearer []postmanAuthItem `json:"bearer"`
 	Apikey []postmanAuthItem `json:"apikey"`
@@ -85,33 +100,64 @@ func ParsePostmanCollection(path string) ([]*models.Request, *models.Collection,
 		return nil, nil, fmt.Errorf("parsing postman collection: %w", err)
 	}
 
-	var requests []*models.Request
-	flattenItems(col.Item, &requests)
+	var allRequests []*models.Request
+	var topLevelIDs []string
+	var folders []models.Folder
+
+	for _, item := range col.Item {
+		if len(item.Item) > 0 {
+			folder, subReqs := buildFolder(item)
+			folders = append(folders, folder)
+			allRequests = append(allRequests, subReqs...)
+		} else if item.Request != nil {
+			req := convertPostmanRequest(item.Name, item.Request)
+			allRequests = append(allRequests, req)
+			topLevelIDs = append(topLevelIDs, req.ID)
+		}
+	}
 
 	collection := &models.Collection{
 		Name:       col.Info.Name,
-		RequestIDs: make([]string, 0, len(requests)),
+		Variables:  make(map[string]string),
+		RequestIDs: topLevelIDs,
+		Folders:    folders,
 	}
 
-	return requests, collection, nil
+	for _, v := range col.Variable {
+		if v.Key != "" {
+			collection.Variables[v.Key] = v.Value
+		}
+	}
+
+	return allRequests, collection, nil
 }
 
-func flattenItems(items []postmanItem, out *[]*models.Request) {
-	for _, item := range items {
-		if len(item.Item) > 0 {
-			flattenItems(item.Item, out)
-			continue
-		}
-		if item.Request == nil {
-			continue
-		}
-		req := convertPostmanRequest(item.Name, item.Request)
-		*out = append(*out, req)
+func buildFolder(item postmanItem) (models.Folder, []*models.Request) {
+	folder := models.Folder{
+		ID:         nextParseID(),
+		Name:       item.Name,
+		RequestIDs: make([]string, 0),
+		Folders:    make([]models.Folder, 0),
 	}
+
+	var allReqs []*models.Request
+	for _, child := range item.Item {
+		if len(child.Item) > 0 {
+			subFolder, subReqs := buildFolder(child)
+			folder.Folders = append(folder.Folders, subFolder)
+			allReqs = append(allReqs, subReqs...)
+		} else if child.Request != nil {
+			req := convertPostmanRequest(child.Name, child.Request)
+			allReqs = append(allReqs, req)
+			folder.RequestIDs = append(folder.RequestIDs, req.ID)
+		}
+	}
+	return folder, allReqs
 }
 
 func convertPostmanRequest(name string, pr *postmanReq) *models.Request {
 	req := &models.Request{
+		ID:          nextParseID(),
 		Name:        name,
 		Method:      models.HTTPMethod(strings.ToUpper(pr.Method)),
 		URL:         pr.URL.Raw,

@@ -11,6 +11,9 @@ type RequestStore interface {
 	DeleteRequest(ctx context.Context, id string) error
 	ListRequests(ctx context.Context) ([]*models.Request, error)
 	AddHistory(ctx context.Context, resp *models.Response) error
+	SaveCollection(ctx context.Context, col *models.Collection) error
+	DeleteCollection(ctx context.Context, id string) error
+	ListCollections(ctx context.Context) ([]*models.Collection, error)
 }
 
 type HTTPExecutor interface {

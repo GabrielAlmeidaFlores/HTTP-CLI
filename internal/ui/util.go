@@ -114,7 +114,8 @@ func syncScrollLine(scroll, cursorLine, visibleLines int) int {
 	return scroll
 }
 
-func overlayCenter(bg, fg string, w, h int) string {	bgLines := strings.Split(bg, "\n")
+func overlayCenter(bg, fg string, w, h int) string {
+	bgLines := strings.Split(bg, "\n")
 	fgLines := strings.Split(fg, "\n")
 
 	fgH := len(fgLines)

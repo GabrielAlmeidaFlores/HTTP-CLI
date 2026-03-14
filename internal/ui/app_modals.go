@@ -32,14 +32,16 @@ func (a *App) showNotify(msg string, isErr bool) {
 }
 
 func (a *App) handleConfirmInput(msg tea.KeyMsg) tea.Cmd {
-	switch msg.String() {
-	case "enter":
-		a.showConfirm = false
-		if a.confirmAction != nil {
-			a.confirmAction()
+	if binding, ok := a.keybindMgr.Resolve(msg.String(), "confirm_modal"); ok {
+		switch binding.Action {
+		case "confirm":
+			a.showConfirm = false
+			if a.confirmAction != nil {
+				a.confirmAction()
+			}
+		case "cancel":
+			a.showConfirm = false
 		}
-	case "n", "esc":
-		a.showConfirm = false
 	}
 	return nil
 }
@@ -49,14 +51,21 @@ func (a *App) handleInputDialog(msg tea.KeyMsg) tea.Cmd {
 	runes := []rune(a.inputValue)
 	n := len(runes)
 
-	switch key {
-	case "enter":
-		a.showInput = false
-		if a.inputAction != nil {
-			a.inputAction(a.inputValue)
+	if binding, ok := a.keybindMgr.Resolve(key, "input_modal"); ok && binding.Panel == "input_modal" {
+		switch binding.Action {
+		case "confirm":
+			a.showInput = false
+			if a.inputAction != nil {
+				a.inputAction(a.inputValue)
+			}
+			return nil
+		case "cancel":
+			a.showInput = false
+			return nil
 		}
-	case "esc":
-		a.showInput = false
+	}
+
+	switch key {
 	case "backspace":
 		if a.inputCursor > 0 {
 			a.inputValue = string(runes[:a.inputCursor-1]) + string(runes[a.inputCursor:])
@@ -189,6 +198,7 @@ func (a *App) handleCurlImportModal(msg tea.KeyMsg) tea.Cmd {
 			_ = a.store.SaveRequest(context.Background(), req)
 			a.requests = append(a.requests, req)
 			a.requestList.setRequests(a.requests)
+			a.collectionList.setRequests(a.requests)
 			a.selectRequest(req)
 			a.showCurlImport = false
 			a.showNotify("Imported: "+req.Name, false)
@@ -250,79 +260,79 @@ func (a *App) handleCurlImportModal(msg tea.KeyMsg) tea.Cmd {
 }
 
 func (a *App) openExternalEditor(initialContent string) tea.Cmd {
-return a.openExternalEditorWithSource(initialContent, "cell_edit")
+	return a.openExternalEditorWithSource(initialContent, "cell_edit")
 }
 
 func (a *App) openExternalEditorWithSource(initialContent, source string) tea.Cmd {
-editorCmd := os.ExpandEnv(a.cfg.ExternalEditor)
-if editorCmd == "" {
-editorCmd = os.Getenv("EDITOR")
-}
-if editorCmd == "" {
-editorCmd = "vi"
-}
+	editorCmd := os.ExpandEnv(a.cfg.ExternalEditor)
+	if editorCmd == "" {
+		editorCmd = os.Getenv("EDITOR")
+	}
+	if editorCmd == "" {
+		editorCmd = "vi"
+	}
 
-tmp, err := os.CreateTemp("", "http-cli-*.txt")
-if err != nil {
-a.setStatus("Could not create temp file: " + err.Error())
-return nil
-}
-tmpPath := tmp.Name()
-_, _ = tmp.WriteString(initialContent)
-_ = tmp.Close()
+	tmp, err := os.CreateTemp("", "http-cli-*.txt")
+	if err != nil {
+		a.setStatus("Could not create temp file: " + err.Error())
+		return nil
+	}
+	tmpPath := tmp.Name()
+	_, _ = tmp.WriteString(initialContent)
+	_ = tmp.Close()
 
-parts := strings.Fields(editorCmd)
-if len(parts) == 0 {
-parts = []string{"vi"}
-}
-args := append(parts[1:], tmpPath)
-cmd := exec.Command(parts[0], args...)
+	parts := strings.Fields(editorCmd)
+	if len(parts) == 0 {
+		parts = []string{"vi"}
+	}
+	args := append(parts[1:], tmpPath)
+	cmd := exec.Command(parts[0], args...)
 
-return tea.ExecProcess(cmd, func(err error) tea.Msg {
-defer os.Remove(tmpPath)
-if err != nil {
-return StatusMsg{Text: "Editor error: " + err.Error()}
-}
-data, readErr := os.ReadFile(tmpPath)
-if readErr != nil {
-return StatusMsg{Text: "Could not read temp file: " + readErr.Error()}
-}
-return externalEditorDoneMsg{content: string(data), source: source}
-})
+	return tea.ExecProcess(cmd, func(err error) tea.Msg {
+		defer os.Remove(tmpPath)
+		if err != nil {
+			return StatusMsg{Text: "Editor error: " + err.Error()}
+		}
+		data, readErr := os.ReadFile(tmpPath)
+		if readErr != nil {
+			return StatusMsg{Text: "Could not read temp file: " + readErr.Error()}
+		}
+		return externalEditorDoneMsg{content: string(data), source: source}
+	})
 }
 
 func (a *App) openResponseInEditor() tea.Cmd {
-editorCmd := os.ExpandEnv(a.cfg.ExternalEditor)
-if editorCmd == "" {
-editorCmd = os.Getenv("EDITOR")
-}
-if editorCmd == "" {
-editorCmd = "vi"
-}
+	editorCmd := os.ExpandEnv(a.cfg.ExternalEditor)
+	if editorCmd == "" {
+		editorCmd = os.Getenv("EDITOR")
+	}
+	if editorCmd == "" {
+		editorCmd = "vi"
+	}
 
-body := a.response.FormattedBody()
+	body := a.response.FormattedBody()
 
-tmp, err := os.CreateTemp("", "http-cli-response-*.json")
-if err != nil {
-a.setStatus("Could not create temp file: " + err.Error())
-return nil
-}
-tmpPath := tmp.Name()
-_, _ = tmp.WriteString(body)
-_ = tmp.Close()
+	tmp, err := os.CreateTemp("", "http-cli-response-*.json")
+	if err != nil {
+		a.setStatus("Could not create temp file: " + err.Error())
+		return nil
+	}
+	tmpPath := tmp.Name()
+	_, _ = tmp.WriteString(body)
+	_ = tmp.Close()
 
-parts := strings.Fields(editorCmd)
-if len(parts) == 0 {
-parts = []string{"vi"}
-}
-args := append(parts[1:], tmpPath)
-cmd := exec.Command(parts[0], args...)
+	parts := strings.Fields(editorCmd)
+	if len(parts) == 0 {
+		parts = []string{"vi"}
+	}
+	args := append(parts[1:], tmpPath)
+	cmd := exec.Command(parts[0], args...)
 
-return tea.ExecProcess(cmd, func(err error) tea.Msg {
-defer os.Remove(tmpPath)
-if err != nil {
-return StatusMsg{Text: "Editor error: " + err.Error()}
-}
-return StatusMsg{Text: ""}
-})
+	return tea.ExecProcess(cmd, func(err error) tea.Msg {
+		defer os.Remove(tmpPath)
+		if err != nil {
+			return StatusMsg{Text: "Editor error: " + err.Error()}
+		}
+		return StatusMsg{Text: ""}
+	})
 }

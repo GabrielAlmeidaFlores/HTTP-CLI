@@ -12,14 +12,14 @@ import (
 )
 
 type RequestListModel struct {
-	keybindMgr  *keybindings.Manager
-	requests    []*models.Request
-	filtered    []*models.Request
-	filter      string
-	selectedIdx int
+	keybindMgr   *keybindings.Manager
+	requests     []*models.Request
+	filtered     []*models.Request
+	filter       string
+	selectedIdx  int
 	scrollOffset int
-	width       int
-	height      int
+	width        int
+	height       int
 }
 
 func newRequestListModel(km *keybindings.Manager) RequestListModel {
@@ -120,7 +120,7 @@ func (m *RequestListModel) view(focused bool, theme config.ThemeConfig) string {
 
 	if len(m.filtered) == 0 {
 		empty := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240")).
+			Foreground(lipgloss.Color(theme.Dim)).
 			Render("No requests\nPress n to create")
 		lines = append(lines, empty)
 	}

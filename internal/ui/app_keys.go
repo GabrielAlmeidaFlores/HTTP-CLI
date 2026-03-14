@@ -39,6 +39,10 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 		return a.handleResponseKey(msg)
 	}
 
+	if a.focused == PanelCollectionList {
+		return a.handleCollectionListKey(msg)
+	}
+
 	binding, found := a.keybindMgr.Resolve(key, string(a.focused))
 	if !found {
 		binding, found = a.keybindMgr.Resolve(key, "global")
@@ -95,6 +99,8 @@ func (a *App) handleResponseKey(msg tea.KeyMsg) tea.Cmd {
 	case "tab_3":
 		a.response.activeTab = responseTabInfo
 		a.response.scrollY = 0
+	case "execute", "execute_request":
+		return a.executeRequest()
 	case "next_panel":
 		a.nextPanel()
 	case "prev_panel":
@@ -164,6 +170,18 @@ func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
+func (a *App) handleCollectionListKey(msg tea.KeyMsg) tea.Cmd {
+	key := msg.String()
+	binding, found := a.keybindMgr.Resolve(key, string(PanelCollectionList))
+	if !found {
+		binding, found = a.keybindMgr.Resolve(key, "global")
+	}
+	if found {
+		return a.executeAction(binding.Action, binding.Panel)
+	}
+	return nil
+}
+
 func (a *App) openCellEdit() {
 	a.cellEditTitle = a.editor.CurrentCellTitle()
 	a.cellEditVal = a.editor.CurrentCellValue()
@@ -183,7 +201,7 @@ func (a *App) routeKeyToPanel(msg tea.KeyMsg) tea.Cmd {
 }
 
 func (a *App) nextPanel() {
-	panels := []FocusedPanel{PanelRequestList, PanelEditor, PanelResponse}
+	panels := []FocusedPanel{PanelRequestList, PanelCollectionList, PanelEditor, PanelResponse}
 	for i, p := range panels {
 		if p == a.focused {
 			a.focused = panels[(i+1)%len(panels)]
@@ -193,7 +211,7 @@ func (a *App) nextPanel() {
 }
 
 func (a *App) prevPanel() {
-	panels := []FocusedPanel{PanelRequestList, PanelEditor, PanelResponse}
+	panels := []FocusedPanel{PanelRequestList, PanelCollectionList, PanelEditor, PanelResponse}
 	for i, p := range panels {
 		if p == a.focused {
 			a.focused = panels[(i-1+len(panels))%len(panels)]
