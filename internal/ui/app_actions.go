@@ -342,6 +342,18 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		}
 		colToDelete := col
 		a.promptConfirm("Delete collection '"+colToDelete.Name+"'?", func() {
+			var remaining []*models.Request
+			for _, r := range a.requests {
+				if r.CollectionID == colToDelete.ID {
+					_ = a.store.DeleteRequest(context.Background(), r.ID)
+					if a.selectedReq != nil && a.selectedReq.ID == r.ID {
+						a.selectedReq = nil
+					}
+				} else {
+					remaining = append(remaining, r)
+				}
+			}
+			a.requests = remaining
 			_ = a.store.DeleteCollection(context.Background(), colToDelete.ID)
 			for i, c := range a.collections {
 				if c.ID == colToDelete.ID {
@@ -349,6 +361,8 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 					break
 				}
 			}
+			a.requestList.setRequests(a.requests)
+			a.collectionList.setRequests(a.requests)
 			a.collectionList.setCollections(a.collections)
 			a.setStatus("Deleted: " + colToDelete.Name)
 		})
