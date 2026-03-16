@@ -256,6 +256,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			a.cellEditTitle = "Response Body"
 			a.cellEditVal = a.response.FormattedBody()
 			a.cellEditCursor = 0
+			a.cellEditScrollY = 0
 			a.cellEditCommit = nil
 			a.showCellEdit = true
 		}

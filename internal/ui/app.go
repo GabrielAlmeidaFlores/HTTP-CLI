@@ -63,11 +63,12 @@ type App struct {
 	inputViewOffset int
 	inputAction     func(string)
 
-	showCellEdit   bool
-	cellEditTitle  string
-	cellEditVal    string
-	cellEditCursor int
-	cellEditCommit func(string)
+	showCellEdit    bool
+	cellEditTitle   string
+	cellEditVal     string
+	cellEditCursor  int
+	cellEditScrollY int
+	cellEditCommit  func(string)
 
 	showCurlImport   bool
 	curlImportVal    string

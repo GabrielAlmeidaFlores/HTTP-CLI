@@ -351,34 +351,83 @@ func (a *App) renderInputModal() string {
 func (a *App) renderCellEditModal() string {
 	modalW := modalWidth(a.width)
 	contentW := modalW - 6
+	lineW := contentW - 2
+
+	visibleLines := a.height - 10
+	if visibleLines < 4 {
+		visibleLines = 4
+	}
+	if visibleLines > 30 {
+		visibleLines = 30
+	}
 
 	titleStyle := accentStyle(a.theme).Bold(true)
+	dimKey := accentStyle(a.theme).Bold(true)
+	dimDesc := dimStyle(a.theme)
 
 	runes := []rune(a.cellEditVal)
-	cursor := a.cellEditCursor
-	before := string(runes[:cursor])
-	after := ""
-	if cursor < len(runes) {
-		after = string(runes[cursor:])
+	wrapped := wrapRunesIntoLines(runes, lineW)
+	totalLines := len(wrapped)
+
+	var scrollY int
+	if a.cellEditCommit == nil {
+		scrollY = a.cellEditScrollY
+		if scrollY > totalLines-1 {
+			scrollY = totalLines - 1
+		}
+		if scrollY < 0 {
+			scrollY = 0
+		}
+		a.cellEditScrollY = scrollY
+	} else {
+		cursorLine, cursorCol := cursorLineCol(runes, a.cellEditCursor, lineW)
+		scrollY = syncScrollLine(a.cellEditScrollY, cursorLine, visibleLines)
+		a.cellEditScrollY = scrollY
+		_ = cursorCol
 	}
-	textContent := before + "█" + after
 
 	textAreaStyle := lipgloss.NewStyle().
 		Width(contentW).
-		Height(8).
-		Padding(1, 1).
+		Height(visibleLines).
+		MaxHeight(visibleLines).
+		Padding(0, 1).
 		Background(lipgloss.Color(a.theme.InputBg)).
 		Foreground(lipgloss.Color(a.theme.TextFg))
 
-	dimKey := accentStyle(a.theme).Bold(true)
-	dimDesc := dimStyle(a.theme)
+	cursorLine, cursorCol := cursorLineCol(runes, a.cellEditCursor, lineW)
+
+	var renderedLines []string
+	for i := scrollY; i < scrollY+visibleLines && i < totalLines; i++ {
+		line := wrapped[i]
+		if a.cellEditCommit != nil && i == cursorLine {
+			before := string(line[:cursorCol])
+			cursor := "█"
+			after := ""
+			if cursorCol < len(line) {
+				after = string(line[cursorCol:])
+			}
+			renderedLines = append(renderedLines, before+cursor+after)
+		} else {
+			renderedLines = append(renderedLines, string(line))
+		}
+	}
+
+	scrollInfo := ""
+	if totalLines > visibleLines {
+		pct := 0
+		if totalLines > 1 {
+			pct = scrollY * 100 / (totalLines - 1)
+		}
+		scrollInfo = dimDesc.Render(fmt.Sprintf("  line %d/%d (%d%%)", scrollY+1, totalLines, pct))
+	}
 
 	hintsRow := a.buildModalHints("cell_edit_modal", dimKey, dimDesc)
 
 	body := lipgloss.JoinVertical(lipgloss.Left,
 		titleStyle.Render(a.cellEditTitle),
 		"",
-		textAreaStyle.Render(textContent),
+		textAreaStyle.Render(strings.Join(renderedLines, "\n")),
+		scrollInfo,
 		"",
 		hintsRow,
 	)

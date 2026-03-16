@@ -76,7 +76,7 @@
         ],
         "description": "Move down",
         "category": "Navigation",
-        "visible": true
+        "visible": false
       },
       "up": {
         "keys": [
@@ -85,7 +85,7 @@
         ],
         "description": "Move up",
         "category": "Navigation",
-        "visible": true
+        "visible": false
       },
       "left": {
         "keys": [
@@ -319,7 +319,7 @@
       },
       "url_hint_arrows": {
         "keys": [
-          "\u2191\u2193"
+          "↑↓"
         ],
         "description": "Navigate rows",
         "category": "URL",
@@ -328,7 +328,7 @@
       },
       "url_hint_lr": {
         "keys": [
-          "\u2190\u2192"
+          "←→"
         ],
         "description": "Cycle method",
         "category": "URL",
@@ -346,7 +346,7 @@
       },
       "headers_hint_arrows": {
         "keys": [
-          "\u2191\u2193\u2190\u2192"
+          "↑↓←→"
         ],
         "description": "Navigate",
         "category": "Headers",
@@ -382,7 +382,7 @@
       },
       "body_hint_arrows": {
         "keys": [
-          "\u2191\u2193\u2190\u2192"
+          "↑↓←→"
         ],
         "description": "Navigate",
         "category": "Body",
@@ -409,7 +409,7 @@
       },
       "query_hint_arrows": {
         "keys": [
-          "\u2191\u2193\u2190\u2192"
+          "↑↓←→"
         ],
         "description": "Navigate",
         "category": "Query",
@@ -454,7 +454,7 @@
       },
       "auth_hint_lr": {
         "keys": [
-          "\u2190\u2192"
+          "←→"
         ],
         "description": "Cycle type",
         "category": "Auth",
@@ -842,7 +842,7 @@
     "collection_list": {
       "nav_hint": {
         "keys": [
-          "\u2191\u2193"
+          "↑↓"
         ],
         "description": "Navigate",
         "category": "Collections",
