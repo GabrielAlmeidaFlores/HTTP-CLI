@@ -4,6 +4,11 @@ A terminal-native HTTP client — like Postman, but lives in your terminal.
 
 `http-cli` is a fully interactive TUI HTTP testing tool built in Go. Create, organize, and execute HTTP requests without leaving the terminal. Vim-style navigation, fully config-driven keybindings and colors, persistent storage, and contextual hints make it a complete replacement for GUI HTTP clients in keyboard-driven workflows.
 
+<video width="100%" controls>
+  <source src="https://raw.githubusercontent.com/GabrielAlmeidaFlores/GabrielAlmeidaFlores/main/assets/HTTP-CLI/http-cli.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 ---
 
 ## Features
