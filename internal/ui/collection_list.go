@@ -210,7 +210,7 @@ func (m *CollectionListModel) ensureVisible() {
 	}
 }
 
-func (m *CollectionListModel) view(focused bool, theme config.ThemeConfig) string {
+func (m *CollectionListModel) view(focused bool, theme config.ThemeConfig, shortcut string) string {
 	var lines []string
 	visible := m.height - 2
 	if visible < 1 {
@@ -233,7 +233,7 @@ func (m *CollectionListModel) view(focused bool, theme config.ThemeConfig) strin
 		Width(m.width).
 		Height(m.height).
 		Padding(0, 1).
-		Render("Collections\n" + strings.Join(lines, "\n"))
+		Render("Collections [" + shortcut + "]\n" + strings.Join(lines, "\n"))
 }
 
 func (m *CollectionListModel) renderNode(node colNode, selected bool, theme config.ThemeConfig) string {

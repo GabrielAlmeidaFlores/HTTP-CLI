@@ -182,6 +182,9 @@ func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 			a.focused = PanelRequestList
 		}
 	default:
+		if binding.Panel == "navigation" || binding.Panel == "global" {
+			return a.executeAction(binding.Action, binding.Panel)
+		}
 		if a.selectedReq != nil {
 			return a.editor.handleKey(msg, a.selectedReq)
 		}

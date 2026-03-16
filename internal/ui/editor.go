@@ -797,8 +797,8 @@ func (m *EditorModel) CommitCellValue(val string) {
 	m.syncToRequest()
 }
 
-func (m *EditorModel) view(focused bool, theme config.ThemeConfig) string {
-	tabs := m.renderTabs()
+func (m *EditorModel) view(focused bool, theme config.ThemeConfig, shortcut string) string {
+	tabs := m.renderTabs(shortcut)
 	content := m.renderTabContent(focused)
 	inner := lipgloss.JoinVertical(lipgloss.Left, tabs, content)
 	return panelBorderStyle(focused, theme).
@@ -807,7 +807,7 @@ func (m *EditorModel) view(focused bool, theme config.ThemeConfig) string {
 		Render(inner)
 }
 
-func (m *EditorModel) renderTabs() string {
+func (m *EditorModel) renderTabs(shortcut string) string {
 	var parts []string
 	for i, t := range editorTabs {
 		style := lipgloss.NewStyle().Padding(0, 1)
@@ -819,7 +819,8 @@ func (m *EditorModel) renderTabs() string {
 		}
 		parts = append(parts, style.Render(label))
 	}
-	return strings.Join(parts, " ")
+	hint := lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Dim)).Render("[" + shortcut + "]")
+	return hint + " " + strings.Join(parts, " ")
 }
 
 func (m *EditorModel) renderTabContent(focused bool) string {

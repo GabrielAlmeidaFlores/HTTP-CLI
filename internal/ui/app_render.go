@@ -63,12 +63,12 @@ func (a *App) renderTopBar() string {
 }
 
 func (a *App) renderMainArea() string {
-	reqListView := a.requestList.view(a.focused == PanelRequestList, a.cfg.UI.Theme)
-	colListView := a.collectionList.view(a.focused == PanelCollectionList, a.cfg.UI.Theme)
+	reqListView := a.requestList.view(a.focused == PanelRequestList, a.cfg.UI.Theme, a.keybindMgr.FirstKey("focus_panel_1", "navigation"))
+	colListView := a.collectionList.view(a.focused == PanelCollectionList, a.cfg.UI.Theme, a.keybindMgr.FirstKey("focus_panel_4", "navigation"))
 	leftPanel := lipgloss.JoinVertical(lipgloss.Left, reqListView, colListView)
 
-	rightTop := a.editor.view(a.focused == PanelEditor, a.cfg.UI.Theme)
-	rightBottom := a.response.view(a.focused == PanelResponse, a.cfg.UI.Theme)
+	rightTop := a.editor.view(a.focused == PanelEditor, a.cfg.UI.Theme, a.keybindMgr.FirstKey("focus_panel_2", "navigation"))
+	rightBottom := a.response.view(a.focused == PanelResponse, a.cfg.UI.Theme, a.keybindMgr.FirstKey("focus_panel_3", "navigation"))
 	right := lipgloss.JoinVertical(lipgloss.Left, rightTop, rightBottom)
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftPanel, right)

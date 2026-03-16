@@ -123,33 +123,33 @@
       },
       "focus_panel_1": {
         "keys": [
-          "1"
+          "s"
         ],
-        "description": "Requests panel",
+        "description": "Requests",
         "category": "Panels",
         "visible": true
       },
       "focus_panel_2": {
         "keys": [
-          "2"
+          "w"
         ],
-        "description": "Editor panel",
+        "description": "Editor",
         "category": "Panels",
         "visible": true
       },
       "focus_panel_3": {
         "keys": [
-          "3"
+          "o"
         ],
-        "description": "Response panel",
+        "description": "Response",
         "category": "Panels",
         "visible": true
       },
       "focus_panel_4": {
         "keys": [
-          "4"
+          "c"
         ],
-        "description": "Collections panel",
+        "description": "Collections",
         "category": "Panels",
         "visible": true
       }
