@@ -340,7 +340,7 @@ func (m *EditorModel) handleURLKey(key string, action string) {
 				m.urlCursor++
 			}
 		default:
-			if isPasteKey(key) {
+			if b, ok := m.keybindMgr.Resolve(key, "editor"); ok && b.Action == "paste" {
 				text, err := clipboard.ReadAll()
 				if err == nil {
 					m.urlEditVal, m.urlCursor = insertAtCursor(m.urlEditVal, m.urlCursor, text)
@@ -445,7 +445,7 @@ func (m *EditorModel) handleBodyTextKey(key string, action string) {
 				m.bodyCursor++
 			}
 		default:
-			if isPasteKey(key) {
+			if b, ok := m.keybindMgr.Resolve(key, "editor"); ok && b.Action == "paste" {
 				text, err := clipboard.ReadAll()
 				if err == nil {
 					m.bodyEditVal, m.bodyCursor = insertAtCursor(m.bodyEditVal, m.bodyCursor, text)
@@ -592,7 +592,7 @@ func (m *EditorModel) handleAuthKey(key string, action string) {
 				m.authCursor++
 			}
 		default:
-			if isPasteKey(key) {
+			if b, ok := m.keybindMgr.Resolve(key, "editor"); ok && b.Action == "paste" {
 				text, err := clipboard.ReadAll()
 				if err == nil {
 					m.authEditVal, m.authCursor = insertAtCursor(m.authEditVal, m.authCursor, text)
@@ -683,6 +683,19 @@ func (m *EditorModel) CurrentCellIsText() bool {
 		return m.authRowIdx > 0
 	}
 	return false
+}
+
+func (m *EditorModel) CurrentCellIsFilePath() bool {
+	if m.activeTab != TabBody {
+		return false
+	}
+	if m.bodyFormTable.colIdx == 0 || m.bodyFormTable.colIdx == 1 {
+		return false
+	}
+	if m.bodyFormTable.rowIdx >= len(m.bodyFormTable.rows) {
+		return false
+	}
+	return m.bodyFormTable.rows[m.bodyFormTable.rowIdx].isFile
 }
 
 func (m *EditorModel) CurrentCellTitle() string {
@@ -784,8 +797,8 @@ func (m *EditorModel) CommitCellValue(val string) {
 	m.syncToRequest()
 }
 
-func (m *EditorModel) view(focused bool, theme config.ThemeConfig) string {
-	tabs := m.renderTabs()
+func (m *EditorModel) view(focused bool, theme config.ThemeConfig, shortcut string) string {
+	tabs := m.renderTabs(shortcut)
 	content := m.renderTabContent(focused)
 	inner := lipgloss.JoinVertical(lipgloss.Left, tabs, content)
 	return panelBorderStyle(focused, theme).
@@ -794,7 +807,7 @@ func (m *EditorModel) view(focused bool, theme config.ThemeConfig) string {
 		Render(inner)
 }
 
-func (m *EditorModel) renderTabs() string {
+func (m *EditorModel) renderTabs(shortcut string) string {
 	var parts []string
 	for i, t := range editorTabs {
 		style := lipgloss.NewStyle().Padding(0, 1)
@@ -806,7 +819,8 @@ func (m *EditorModel) renderTabs() string {
 		}
 		parts = append(parts, style.Render(label))
 	}
-	return strings.Join(parts, " ")
+	hint := lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Dim)).Render("[" + shortcut + "]")
+	return hint + " " + strings.Join(parts, " ")
 }
 
 func (m *EditorModel) renderTabContent(focused bool) string {

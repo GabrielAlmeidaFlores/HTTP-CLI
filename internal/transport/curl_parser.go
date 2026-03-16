@@ -285,4 +285,3 @@ func tokenize(s string) []string {
 
 	return tokens
 }
-

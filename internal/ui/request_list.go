@@ -101,8 +101,8 @@ func (m *RequestListModel) ensureVisible() {
 	}
 }
 
-func (m *RequestListModel) view(focused bool, theme config.ThemeConfig) string {
-	title := "Requests"
+func (m *RequestListModel) view(focused bool, theme config.ThemeConfig, shortcut string) string {
+	title := "Requests [" + shortcut + "]"
 	if m.filter != "" {
 		title = fmt.Sprintf("Requests [/%s]", m.filter)
 	}

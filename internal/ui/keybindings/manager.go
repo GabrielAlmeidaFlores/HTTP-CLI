@@ -53,6 +53,7 @@ func (m *Manager) loadFromConfig(cfg *config.Config) {
 		"cell_edit_modal":   10,
 		"curl_import_modal": 10,
 		"curl_export_modal": 10,
+		"file_picker":       10,
 		"vim_viewer":        10,
 	}
 
@@ -121,7 +122,7 @@ func (m *Manager) GetHints(panel, activeTab string) []Binding {
 			continue
 		}
 
-		if b.Panel != panel {
+		if b.Panel != panel && b.Panel != "navigation" {
 			continue
 		}
 
@@ -149,6 +150,17 @@ func (m *Manager) GetHints(panel, activeTab string) []Binding {
 
 func matchesPanel(b Binding, panel string) bool {
 	return b.Panel == "global" || b.Panel == "navigation" || b.Panel == panel
+}
+
+func (m *Manager) FirstKey(action, panel string) string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	for _, b := range m.bindings {
+		if b.Action == action && b.Panel == panel && len(b.Keys) > 0 {
+			return b.Keys[0]
+		}
+	}
+	return ""
 }
 
 func scoreBinding(b Binding, panel string) int {

@@ -253,7 +253,11 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 
 	case "open_viewer":
 		if a.response.GetResponse() != nil {
-			return a.openResponseInEditor()
+			a.cellEditTitle = "Response Body"
+			a.cellEditVal = a.response.FormattedBody()
+			a.cellEditCursor = 0
+			a.cellEditCommit = nil
+			a.showCellEdit = true
 		}
 
 	case "save":
@@ -293,10 +297,10 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		})
 
 	case "import_collection":
-		a.promptInput("Collection path (.json):", "", func(path string) {
-			reqs, col, err := parser.ParsePostmanCollection(expandPath(path))
+		a.openFilePickerExt(".json", func(path string) {
+			reqs, col, err := parser.ParsePostmanCollection(path)
 			if err != nil {
-				a.showNotify("Import failed: "+err.Error(), true)
+				a.showNotify("Import failed: select a .json file exported from Postman", true)
 				return
 			}
 			for _, req := range reqs {
@@ -538,18 +542,18 @@ func (a *App) executeCollectionRequest() tea.Cmd {
 }
 
 func removeStringSlice(slice []string, val string) []string {
-out := slice[:0]
-for _, s := range slice {
-if s != val {
-out = append(out, s)
-}
-}
-return out
+	out := slice[:0]
+	for _, s := range slice {
+		if s != val {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 func removeRequestFromFolders(folders []models.Folder, id string) {
-for i := range folders {
-folders[i].RequestIDs = removeStringSlice(folders[i].RequestIDs, id)
-removeRequestFromFolders(folders[i].Folders, id)
-}
+	for i := range folders {
+		folders[i].RequestIDs = removeStringSlice(folders[i].RequestIDs, id)
+		removeRequestFromFolders(folders[i].Folders, id)
+	}
 }

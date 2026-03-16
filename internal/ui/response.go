@@ -119,8 +119,8 @@ func (m *ResponseModel) FormattedBody() string {
 	return body
 }
 
-func (m *ResponseModel) view(focused bool, theme config.ThemeConfig) string {
-	tabBar := m.renderTabBar(theme)
+func (m *ResponseModel) view(focused bool, theme config.ThemeConfig, shortcut string) string {
+	tabBar := m.renderTabBar(theme, shortcut)
 	content := m.renderActiveTab(theme)
 
 	inner := lipgloss.JoinVertical(lipgloss.Left, tabBar, content)
@@ -132,7 +132,7 @@ func (m *ResponseModel) view(focused bool, theme config.ThemeConfig) string {
 		Render(inner)
 }
 
-func (m *ResponseModel) renderTabBar(theme config.ThemeConfig) string {
+func (m *ResponseModel) renderTabBar(theme config.ThemeConfig, shortcut string) string {
 	active := lipgloss.NewStyle().
 		Bold(true).
 		Underline(true).
@@ -149,7 +149,7 @@ func (m *ResponseModel) renderTabBar(theme config.ThemeConfig) string {
 			parts = append(parts, inactive.Render(label))
 		}
 	}
-	bar := strings.Join(parts, " ")
+	bar := lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.Dim)).Render("["+shortcut+"]") + " " + strings.Join(parts, " ")
 	underline := lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.SeparatorFg)).
 		Render(strings.Repeat("─", m.contentWidth()))
 	return lipgloss.JoinVertical(lipgloss.Left, bar, underline)

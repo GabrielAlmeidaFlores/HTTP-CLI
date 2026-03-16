@@ -123,33 +123,33 @@
       },
       "focus_panel_1": {
         "keys": [
-          "1"
+          "s"
         ],
-        "description": "Requests panel",
+        "description": "Requests",
         "category": "Panels",
         "visible": true
       },
       "focus_panel_2": {
         "keys": [
-          "2"
+          "w"
         ],
-        "description": "Editor panel",
+        "description": "Editor",
         "category": "Panels",
         "visible": true
       },
       "focus_panel_3": {
         "keys": [
-          "3"
+          "o"
         ],
-        "description": "Response panel",
+        "description": "Response",
         "category": "Panels",
         "visible": true
       },
       "focus_panel_4": {
         "keys": [
-          "4"
+          "c"
         ],
-        "description": "Collections panel",
+        "description": "Collections",
         "category": "Panels",
         "visible": true
       }
@@ -229,6 +229,14 @@
       }
     },
     "editor": {
+      "paste": {
+        "keys": [
+          "ctrl+shift+v"
+        ],
+        "description": "Paste",
+        "category": "Editor",
+        "visible": false
+      },
       "insert_mode": {
         "keys": [
           "e"
@@ -622,6 +630,14 @@
       }
     },
     "input_modal": {
+      "paste": {
+        "keys": [
+          "ctrl+shift+v"
+        ],
+        "description": "Paste",
+        "category": "Input",
+        "visible": false
+      },
       "confirm": {
         "keys": [
           "enter"
@@ -640,6 +656,14 @@
       }
     },
     "cell_edit_modal": {
+      "paste": {
+        "keys": [
+          "ctrl+shift+v"
+        ],
+        "description": "Paste",
+        "category": "Cell Edit",
+        "visible": false
+      },
       "confirm_exit": {
         "keys": [
           "enter",
@@ -682,6 +706,58 @@
         "visible": true
       }
     },
+    "file_picker": {
+      "down": {
+        "keys": [
+          "j",
+          "down"
+        ],
+        "description": "Move down",
+        "category": "File Picker",
+        "visible": true
+      },
+      "up": {
+        "keys": [
+          "k",
+          "up"
+        ],
+        "description": "Move up",
+        "category": "File Picker",
+        "visible": true
+      },
+      "select": {
+        "keys": [
+          "enter"
+        ],
+        "description": "Open / select",
+        "category": "File Picker",
+        "visible": true
+      },
+      "go_up": {
+        "keys": [
+          "backspace"
+        ],
+        "description": "Delete char / go up",
+        "category": "File Picker",
+        "visible": true
+      },
+      "home_dir": {
+        "keys": [
+          "~"
+        ],
+        "description": "Go to home",
+        "category": "File Picker",
+        "visible": true
+      },
+      "cancel": {
+        "keys": [
+          "esc"
+        ],
+        "description": "Clear / quit",
+        "category": "File Picker",
+        "visible": true
+      }
+    },
     "curl_import_modal": {
       "import": {
         "keys": [
@@ -693,7 +769,7 @@
       },
       "paste": {
         "keys": [
-          "ctrl+v"
+          "ctrl+shift+v"
         ],
         "description": "Paste",
         "category": "cURL Import",

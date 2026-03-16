@@ -2,9 +2,95 @@ package ui
 
 import (
 	"context"
+	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+func (a *App) fpListHeight() int {
+	h := a.height/2 - 7
+	if h < 3 {
+		h = 3
+	}
+	if h > 20 {
+		h = 20
+	}
+	return h
+}
+
+func (a *App) fpUpdateScroll() {
+	listH := a.fpListHeight()
+	fp := &a.fp
+	if fp.cursor < fp.scrollOff {
+		fp.scrollOff = fp.cursor
+	}
+	if fp.cursor >= fp.scrollOff+listH {
+		fp.scrollOff = fp.cursor - listH + 1
+	}
+}
+
+func (a *App) handleFilePicker(msg tea.KeyMsg) tea.Cmd {
+	key := msg.String()
+	fp := &a.fp
+	n := len(fp.filtered)
+
+	if binding, ok := a.keybindMgr.Resolve(key, "file_picker"); ok {
+		switch binding.Action {
+		case "down":
+			if fp.cursor < n-1 {
+				fp.cursor++
+				a.fpUpdateScroll()
+			}
+		case "up":
+			if fp.cursor > 0 {
+				fp.cursor--
+				a.fpUpdateScroll()
+			}
+		case "select":
+			if n == 0 {
+				return nil
+			}
+			isDir := fp.enterSelected()
+			if !isDir {
+				path := fp.selectedPath()
+				a.showFilePicker = false
+				if fp.onSelect != nil {
+					fp.onSelect(path)
+				}
+			} else {
+				a.fpUpdateScroll()
+			}
+		case "go_up":
+			if fp.search != "" {
+				runes := []rune(fp.search)
+				fp.applySearch(string(runes[:len(runes)-1]))
+			} else {
+				fp.goUp()
+			}
+			a.fpUpdateScroll()
+		case "home_dir":
+			if home, err := os.UserHomeDir(); err == nil {
+				fp.navigate(home)
+			}
+			a.fpUpdateScroll()
+		case "cancel":
+			if fp.search != "" {
+				fp.applySearch("")
+				a.fpUpdateScroll()
+			} else {
+				a.showFilePicker = false
+			}
+		}
+		return nil
+	}
+
+	if isPrintable(key) {
+		fp.applySearch(fp.search + key)
+		a.fpUpdateScroll()
+	}
+	return nil
+}
 
 func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 	key := msg.String()
@@ -149,7 +235,7 @@ func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 			}
 		}
 	case "exit":
-		if a.selectedReq != nil && !a.editor.IsSubEditing() {
+		if !a.editor.IsSubEditing() {
 			return tea.Quit
 		}
 	case "search":
@@ -165,7 +251,15 @@ func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 		}
 	case "insert_mode":
 		if a.selectedReq != nil && !a.editor.IsSubEditing() && a.editor.CurrentCellIsText() {
-			a.openCellEdit()
+			if a.editor.CurrentCellIsFilePath() {
+				a.openFilePicker(func(path string) {
+					a.editor.CommitCellValue(path)
+					_ = a.store.SaveRequest(context.Background(), a.selectedReq)
+					a.setStatus("Saved")
+				})
+			} else {
+				a.openCellEdit()
+			}
 		}
 	case "normal_mode":
 		if a.editor.IsSubEditing() {
@@ -174,6 +268,10 @@ func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 			a.focused = PanelRequestList
 		}
 	default:
+		if (binding.Panel == "navigation" || binding.Panel == "global") &&
+			strings.HasPrefix(binding.Action, "focus_panel_") {
+			return a.executeAction(binding.Action, binding.Panel)
+		}
 		if a.selectedReq != nil {
 			return a.editor.handleKey(msg, a.selectedReq)
 		}

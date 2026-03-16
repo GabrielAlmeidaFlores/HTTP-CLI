@@ -115,7 +115,7 @@ Opens when you press `e` on a text cell. Full text editing with clipboard paste 
 | `ctrl+d` | Save without closing |
 | `ctrl+j` | Insert newline |
 | `ctrl+o` | Open in external editor |
-| `ctrl+v` | Paste from clipboard |
+| `ctrl+shift+v` | Paste from clipboard |
 | `Esc` | Cancel |
 
 ---
