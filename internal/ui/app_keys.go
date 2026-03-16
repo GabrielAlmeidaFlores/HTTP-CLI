@@ -300,6 +300,7 @@ func (a *App) openCellEdit() {
 	a.cellEditTitle = a.editor.CurrentCellTitle()
 	a.cellEditVal = a.editor.CurrentCellValue()
 	a.cellEditCursor = len([]rune(a.cellEditVal))
+	a.cellEditScrollY = 0
 	a.cellEditCommit = func(val string) {
 		a.editor.CommitCellValue(val)
 	}

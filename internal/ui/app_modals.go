@@ -126,6 +126,25 @@ func (a *App) handleCellEditModal(msg tea.KeyMsg) tea.Cmd {
 	runes := []rune(a.cellEditVal)
 	n := len(runes)
 
+	if a.cellEditCommit == nil {
+		switch key {
+		case "j", "down":
+			a.cellEditScrollY++
+			return nil
+		case "k", "up":
+			if a.cellEditScrollY > 0 {
+				a.cellEditScrollY--
+			}
+			return nil
+		case "g":
+			a.cellEditScrollY = 0
+			return nil
+		case "G":
+			a.cellEditScrollY = 9999
+			return nil
+		}
+	}
+
 	if binding, ok := a.keybindMgr.Resolve(key, "cell_edit_modal"); ok && binding.Panel == "cell_edit_modal" {
 		switch binding.Action {
 		case "confirm_exit":
