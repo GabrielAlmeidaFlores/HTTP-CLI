@@ -253,7 +253,11 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 
 	case "open_viewer":
 		if a.response.GetResponse() != nil {
-			return a.openResponseInEditor()
+			a.cellEditTitle = "Response Body"
+			a.cellEditVal = a.response.FormattedBody()
+			a.cellEditCursor = 0
+			a.cellEditCommit = nil
+			a.showCellEdit = true
 		}
 
 	case "save":

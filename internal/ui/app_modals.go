@@ -181,20 +181,22 @@ func (a *App) handleCellEditModal(msg tea.KeyMsg) tea.Cmd {
 		case "confirm_exit":
 			if a.cellEditCommit != nil {
 				a.cellEditCommit(a.cellEditVal)
-			}
-			a.showCellEdit = false
-			if a.selectedReq != nil {
-				_ = a.store.SaveRequest(context.Background(), a.selectedReq)
-				a.setStatus("Saved")
+				a.showCellEdit = false
+				if a.selectedReq != nil {
+					_ = a.store.SaveRequest(context.Background(), a.selectedReq)
+					a.setStatus("Saved")
+				}
+			} else {
+				a.showCellEdit = false
 			}
 			return nil
 		case "save_only":
 			if a.cellEditCommit != nil {
 				a.cellEditCommit(a.cellEditVal)
-			}
-			if a.selectedReq != nil {
-				_ = a.store.SaveRequest(context.Background(), a.selectedReq)
-				a.setStatus("Saved")
+				if a.selectedReq != nil {
+					_ = a.store.SaveRequest(context.Background(), a.selectedReq)
+					a.setStatus("Saved")
+				}
 			}
 			return nil
 		case "cancel":
