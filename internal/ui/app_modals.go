@@ -8,6 +8,7 @@ import (
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/user/http-cli/internal/models"
 )
 
 func (a *App) promptConfirm(msg string, action func()) {
@@ -32,14 +33,16 @@ func (a *App) showNotify(msg string, isErr bool) {
 }
 
 func (a *App) handleConfirmInput(msg tea.KeyMsg) tea.Cmd {
-	switch msg.String() {
-	case "enter":
-		a.showConfirm = false
-		if a.confirmAction != nil {
-			a.confirmAction()
+	if binding, ok := a.keybindMgr.Resolve(msg.String(), "confirm_modal"); ok {
+		switch binding.Action {
+		case "confirm":
+			a.showConfirm = false
+			if a.confirmAction != nil {
+				a.confirmAction()
+			}
+		case "cancel":
+			a.showConfirm = false
 		}
-	case "n", "esc":
-		a.showConfirm = false
 	}
 	return nil
 }
@@ -49,14 +52,21 @@ func (a *App) handleInputDialog(msg tea.KeyMsg) tea.Cmd {
 	runes := []rune(a.inputValue)
 	n := len(runes)
 
-	switch key {
-	case "enter":
-		a.showInput = false
-		if a.inputAction != nil {
-			a.inputAction(a.inputValue)
+	if binding, ok := a.keybindMgr.Resolve(key, "input_modal"); ok && binding.Panel == "input_modal" {
+		switch binding.Action {
+		case "confirm":
+			a.showInput = false
+			if a.inputAction != nil {
+				a.inputAction(a.inputValue)
+			}
+			return nil
+		case "cancel":
+			a.showInput = false
+			return nil
 		}
-	case "esc":
-		a.showInput = false
+	}
+
+	switch key {
 	case "backspace":
 		if a.inputCursor > 0 {
 			a.inputValue = string(runes[:a.inputCursor-1]) + string(runes[a.inputCursor:])
@@ -189,6 +199,7 @@ func (a *App) handleCurlImportModal(msg tea.KeyMsg) tea.Cmd {
 			_ = a.store.SaveRequest(context.Background(), req)
 			a.requests = append(a.requests, req)
 			a.requestList.setRequests(a.requests)
+			a.collectionList.setRequests(a.requests)
 			a.selectRequest(req)
 			a.showCurlImport = false
 			a.showNotify("Imported: "+req.Name, false)
@@ -250,79 +261,162 @@ func (a *App) handleCurlImportModal(msg tea.KeyMsg) tea.Cmd {
 }
 
 func (a *App) openExternalEditor(initialContent string) tea.Cmd {
-return a.openExternalEditorWithSource(initialContent, "cell_edit")
+	return a.openExternalEditorWithSource(initialContent, "cell_edit")
 }
 
 func (a *App) openExternalEditorWithSource(initialContent, source string) tea.Cmd {
-editorCmd := os.ExpandEnv(a.cfg.ExternalEditor)
-if editorCmd == "" {
-editorCmd = os.Getenv("EDITOR")
-}
-if editorCmd == "" {
-editorCmd = "vi"
-}
+	editorCmd := os.ExpandEnv(a.cfg.ExternalEditor)
+	if editorCmd == "" {
+		editorCmd = os.Getenv("EDITOR")
+	}
+	if editorCmd == "" {
+		editorCmd = "vi"
+	}
 
-tmp, err := os.CreateTemp("", "http-cli-*.txt")
-if err != nil {
-a.setStatus("Could not create temp file: " + err.Error())
-return nil
-}
-tmpPath := tmp.Name()
-_, _ = tmp.WriteString(initialContent)
-_ = tmp.Close()
+	tmp, err := os.CreateTemp("", "http-cli-*.txt")
+	if err != nil {
+		a.setStatus("Could not create temp file: " + err.Error())
+		return nil
+	}
+	tmpPath := tmp.Name()
+	_, _ = tmp.WriteString(initialContent)
+	_ = tmp.Close()
 
-parts := strings.Fields(editorCmd)
-if len(parts) == 0 {
-parts = []string{"vi"}
-}
-args := append(parts[1:], tmpPath)
-cmd := exec.Command(parts[0], args...)
+	parts := strings.Fields(editorCmd)
+	if len(parts) == 0 {
+		parts = []string{"vi"}
+	}
+	args := append(parts[1:], tmpPath)
+	cmd := exec.Command(parts[0], args...)
 
-return tea.ExecProcess(cmd, func(err error) tea.Msg {
-defer os.Remove(tmpPath)
-if err != nil {
-return StatusMsg{Text: "Editor error: " + err.Error()}
-}
-data, readErr := os.ReadFile(tmpPath)
-if readErr != nil {
-return StatusMsg{Text: "Could not read temp file: " + readErr.Error()}
-}
-return externalEditorDoneMsg{content: string(data), source: source}
-})
+	return tea.ExecProcess(cmd, func(err error) tea.Msg {
+		defer os.Remove(tmpPath)
+		if err != nil {
+			return StatusMsg{Text: "Editor error: " + err.Error()}
+		}
+		data, readErr := os.ReadFile(tmpPath)
+		if readErr != nil {
+			return StatusMsg{Text: "Could not read temp file: " + readErr.Error()}
+		}
+		return externalEditorDoneMsg{content: string(data), source: source}
+	})
 }
 
 func (a *App) openResponseInEditor() tea.Cmd {
-editorCmd := os.ExpandEnv(a.cfg.ExternalEditor)
-if editorCmd == "" {
-editorCmd = os.Getenv("EDITOR")
-}
-if editorCmd == "" {
-editorCmd = "vi"
+	editorCmd := os.ExpandEnv(a.cfg.ExternalEditor)
+	if editorCmd == "" {
+		editorCmd = os.Getenv("EDITOR")
+	}
+	if editorCmd == "" {
+		editorCmd = "vi"
+	}
+
+	body := a.response.FormattedBody()
+
+	tmp, err := os.CreateTemp("", "http-cli-response-*.json")
+	if err != nil {
+		a.setStatus("Could not create temp file: " + err.Error())
+		return nil
+	}
+	tmpPath := tmp.Name()
+	_, _ = tmp.WriteString(body)
+	_ = tmp.Close()
+
+	parts := strings.Fields(editorCmd)
+	if len(parts) == 0 {
+		parts = []string{"vi"}
+	}
+	args := append(parts[1:], tmpPath)
+	cmd := exec.Command(parts[0], args...)
+
+	return tea.ExecProcess(cmd, func(err error) tea.Msg {
+		defer os.Remove(tmpPath)
+		if err != nil {
+			return StatusMsg{Text: "Editor error: " + err.Error()}
+		}
+		return StatusMsg{Text: ""}
+	})
 }
 
-body := a.response.FormattedBody()
+func (a *App) openVarsModal(col *models.Collection) {
+a.varsCollection = col
+rows := make([]kvRow, 0, len(col.Variables))
+for k, v := range col.Variables {
+rows = append(rows, kvRow{enabled: true, key: k, value: v})
+}
+a.varsTable = newKvTable(rows, a.keybindMgr, a.theme)
+a.varsTable.colIdx = 1
+a.showVarsModal = true
+}
 
-tmp, err := os.CreateTemp("", "http-cli-response-*.json")
-if err != nil {
-a.setStatus("Could not create temp file: " + err.Error())
+func (a *App) handleVarsModal(msg tea.KeyMsg) tea.Cmd {
+key := msg.String()
+
+if binding, ok := a.keybindMgr.Resolve(key, "vars_modal"); ok {
+switch binding.Action {
+case "close":
+a.saveVarsFromTable()
+a.showVarsModal = false
+return nil
+case "new_row":
+a.varsTable.rows = append(a.varsTable.rows, kvRow{enabled: true})
+a.varsTable.rowIdx = len(a.varsTable.rows) - 1
+a.varsTable.colIdx = 1
+return nil
+case "delete_row":
+if len(a.varsTable.rows) > 0 {
+i := a.varsTable.rowIdx
+a.varsTable.rows = append(a.varsTable.rows[:i], a.varsTable.rows[i+1:]...)
+if a.varsTable.rowIdx >= len(a.varsTable.rows) && a.varsTable.rowIdx > 0 {
+a.varsTable.rowIdx--
+}
+a.saveVarsFromTable()
+}
+return nil
+case "edit_cell":
+if len(a.varsTable.rows) == 0 {
 return nil
 }
-tmpPath := tmp.Name()
-_, _ = tmp.WriteString(body)
-_ = tmp.Close()
-
-parts := strings.Fields(editorCmd)
-if len(parts) == 0 {
-parts = []string{"vi"}
+row := a.varsTable.rows[a.varsTable.rowIdx]
+isKey := a.varsTable.colIdx == 1
+title := "Value"
+val := row.value
+if isKey {
+title = "Key"
+val = row.key
 }
-args := append(parts[1:], tmpPath)
-cmd := exec.Command(parts[0], args...)
-
-return tea.ExecProcess(cmd, func(err error) tea.Msg {
-defer os.Remove(tmpPath)
-if err != nil {
-return StatusMsg{Text: "Editor error: " + err.Error()}
+a.cellEditTitle = title
+a.cellEditVal = val
+a.cellEditCursor = len([]rune(val))
+a.cellEditCommit = func(newVal string) {
+if a.varsTable.rowIdx < len(a.varsTable.rows) {
+if isKey {
+a.varsTable.rows[a.varsTable.rowIdx].key = newVal
+} else {
+a.varsTable.rows[a.varsTable.rowIdx].value = newVal
 }
-return StatusMsg{Text: ""}
-})
+a.saveVarsFromTable()
+}
+}
+a.showCellEdit = true
+return nil
+}
+}
+
+a.varsTable.handleKey(key)
+return nil
+}
+
+func (a *App) saveVarsFromTable() {
+if a.varsCollection == nil {
+return
+}
+vars := make(map[string]string)
+for _, row := range a.varsTable.rows {
+if row.key != "" {
+vars[row.key] = row.value
+}
+}
+a.varsCollection.Variables = vars
+_ = a.store.SaveCollection(context.Background(), a.varsCollection)
 }

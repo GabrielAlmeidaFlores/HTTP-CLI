@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
@@ -12,6 +14,18 @@ import (
 	"github.com/user/http-cli/internal/parser"
 )
 
+func expandPath(path string) string {
+	if path == "~" || strings.HasPrefix(path, "~/") || strings.HasPrefix(path, `~\`) {
+		if home, err := os.UserHomeDir(); err == nil {
+			if path == "~" {
+				return home
+			}
+			return filepath.Join(home, path[2:])
+		}
+	}
+	return filepath.FromSlash(path)
+}
+
 func (a *App) executeAction(action, _ string) tea.Cmd {
 	switch action {
 	case "exit":
@@ -19,6 +33,9 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 
 	case "execute_request":
 		return a.executeRequest()
+
+	case "execute_collection_request":
+		return a.executeCollectionRequest()
 
 	case "search":
 		a.isSearching = true
@@ -49,6 +66,9 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 
 	case "focus_panel_3":
 		a.focused = PanelResponse
+
+	case "focus_panel_4":
+		a.focused = PanelCollectionList
 
 	case "tab_1":
 		if a.focused == PanelEditor {
@@ -89,6 +109,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			_ = a.store.SaveRequest(context.Background(), req)
 			a.requests = append(a.requests, req)
 			a.requestList.setRequests(a.requests)
+			a.collectionList.setRequests(a.requests)
 			a.selectRequest(req)
 		})
 
@@ -112,6 +133,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			_ = a.store.SaveRequest(context.Background(), dup)
 			a.requests = append(a.requests, dup)
 			a.requestList.setRequests(a.requests)
+			a.collectionList.setRequests(a.requests)
 			a.selectRequest(dup)
 			a.setStatus("Duplicated: " + dup.Name)
 		}
@@ -128,9 +150,11 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 					}
 				}
 				a.requestList.setRequests(a.requests)
+				a.collectionList.setRequests(a.requests)
 				if a.selectedReq != nil && a.selectedReq.ID == req.ID {
-					if len(a.requests) > 0 {
-						a.selectRequest(a.requests[0])
+					visible := a.requestList.filtered
+					if len(visible) > 0 {
+						a.selectRequest(visible[0])
 					} else {
 						a.selectedReq = nil
 					}
@@ -147,6 +171,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 					req.Name = name
 					_ = a.store.SaveRequest(context.Background(), req)
 					a.requestList.setRequests(a.requests)
+					a.collectionList.setRequests(a.requests)
 					a.setStatus("Renamed to '" + name + "'")
 				}
 			})
@@ -165,6 +190,9 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			if req := a.requestList.selected(); req != nil {
 				a.selectRequest(req)
 			}
+		case PanelCollectionList:
+			a.collectionList.moveDown()
+			a.selectCollectionNode()
 		}
 
 	case "up":
@@ -174,7 +202,44 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 			if req := a.requestList.selected(); req != nil {
 				a.selectRequest(req)
 			}
+		case PanelCollectionList:
+			a.collectionList.moveUp()
+			a.selectCollectionNode()
 		}
+
+	case "goto_top":
+		switch a.focused {
+		case PanelRequestList:
+			a.requestList.selectedIdx = 0
+			a.requestList.scrollOffset = 0
+			if req := a.requestList.selected(); req != nil {
+				a.selectRequest(req)
+			}
+		case PanelCollectionList:
+			a.collectionList.selectedIdx = 0
+			a.collectionList.scrollOffset = 0
+			a.selectCollectionNode()
+		}
+
+	case "goto_bottom":
+		switch a.focused {
+		case PanelRequestList:
+			if n := len(a.requestList.filtered); n > 0 {
+				a.requestList.selectedIdx = n - 1
+				a.requestList.ensureVisible()
+				if req := a.requestList.selected(); req != nil {
+					a.selectRequest(req)
+				}
+			}
+		case PanelCollectionList:
+			if n := len(a.collectionList.visible); n > 0 {
+				a.collectionList.selectedIdx = n - 1
+				a.collectionList.ensureVisible()
+				a.selectCollectionNode()
+			}
+		}
+
+	case "cancel", "help", "left", "right":
 
 	case "copy_body":
 		body := a.response.FormattedBody()
@@ -198,42 +263,200 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		}
 
 	case "export_curl":
-		if a.selectedReq != nil {
-			a.curlExportVal = exporter.ToCurl(a.selectedReq)
+		var reqToExport *models.Request
+		if a.focused == PanelCollectionList {
+			if node := a.collectionList.selectedNode(); node != nil && node.kind == colNodeRequest {
+				reqToExport = a.collectionList.requestIndex[node.requestID]
+			}
+		} else {
+			reqToExport = a.selectedReq
+		}
+		if reqToExport != nil {
+			a.curlExportVal = exporter.ToCurl(reqToExport)
 			a.showCurlExport = true
+		} else {
+			a.setStatus("Select a request first")
 		}
 
-	case "import_postman":
-		a.promptInput("Postman collection path:", "", func(path string) {
-			reqs, col, err := parser.ParsePostmanCollection(path)
+	case "new_collection":
+		a.promptInput("Collection name:", "New Collection", func(name string) {
+			col := &models.Collection{
+				Name:       name,
+				Variables:  make(map[string]string),
+				RequestIDs: make([]string, 0),
+				Folders:    make([]models.Folder, 0),
+			}
+			_ = a.store.SaveCollection(context.Background(), col)
+			a.collections = append(a.collections, col)
+			a.collectionList.setCollections(a.collections)
+			a.setStatus("Created collection: " + col.Name)
+		})
+
+	case "import_collection":
+		a.promptInput("Collection path (.json):", "", func(path string) {
+			reqs, col, err := parser.ParsePostmanCollection(expandPath(path))
 			if err != nil {
 				a.showNotify("Import failed: "+err.Error(), true)
 				return
 			}
 			for _, req := range reqs {
+				if col != nil {
+					req.CollectionID = col.ID
+				}
 				_ = a.store.SaveRequest(context.Background(), req)
 				a.requests = append(a.requests, req)
 			}
 			a.requestList.setRequests(a.requests)
-			name := path
+			a.collectionList.setRequests(a.requests)
 			if col != nil {
-				name = col.Name
+				_ = a.store.SaveCollection(context.Background(), col)
+				a.collections = append(a.collections, col)
+				a.collectionList.setCollections(a.collections)
+				hasEmptyVars := false
+				for _, v := range col.Variables {
+					if v == "" {
+						hasEmptyVars = true
+						break
+					}
+				}
+				if len(col.Variables) > 0 && hasEmptyVars {
+					a.setStatus(fmt.Sprintf("Imported '%s' (%d requests) — fill in variable values below", col.Name, len(reqs)))
+					a.openVarsModal(col)
+				} else {
+					a.showNotify(fmt.Sprintf("Imported '%s' (%d requests)", col.Name, len(reqs)), false)
+				}
+			} else {
+				a.showNotify(fmt.Sprintf("Imported %d requests", len(reqs)), false)
 			}
-			a.showNotify(fmt.Sprintf("Imported %d requests from '%s'", len(reqs), name), false)
 		})
 
-	case "export_postman":
-		a.promptInput("Export filename (.json):", "collection.json", func(path string) {
-			data, err := exporter.ToPostmanCollection("http-cli", a.requests)
-			if err != nil {
-				a.showNotify("Export failed: "+err.Error(), true)
-				return
+	case "delete_collection":
+		node := a.collectionList.selectedNode()
+		if node == nil {
+			break
+		}
+		if node.kind == colNodeRequest {
+			req, ok := a.collectionList.requestIndex[node.requestID]
+			if !ok {
+				break
 			}
-			if err := os.WriteFile(path, data, 0600); err != nil {
-				a.showNotify("Write failed: "+err.Error(), true)
-				return
+			reqToDelete := req
+			col := node.collection
+			a.promptConfirm("Delete request '"+reqToDelete.Name+"'?", func() {
+				_ = a.store.DeleteRequest(context.Background(), reqToDelete.ID)
+				for i, r := range a.requests {
+					if r.ID == reqToDelete.ID {
+						a.requests = append(a.requests[:i], a.requests[i+1:]...)
+						break
+					}
+				}
+				col.RequestIDs = removeStringSlice(col.RequestIDs, reqToDelete.ID)
+				removeRequestFromFolders(col.Folders, reqToDelete.ID)
+				_ = a.store.SaveCollection(context.Background(), col)
+				a.requestList.setRequests(a.requests)
+				a.collectionList.setRequests(a.requests)
+				a.collectionList.rebuild()
+				if a.selectedReq != nil && a.selectedReq.ID == reqToDelete.ID {
+					a.selectedReq = nil
+				}
+				a.setStatus("Deleted: " + reqToDelete.Name)
+			})
+			break
+		}
+		col := a.collectionList.selectedCollection()
+		if col == nil {
+			break
+		}
+		colToDelete := col
+		a.promptConfirm("Delete collection '"+colToDelete.Name+"'?", func() {
+			var remaining []*models.Request
+			for _, r := range a.requests {
+				if r.CollectionID == colToDelete.ID {
+					_ = a.store.DeleteRequest(context.Background(), r.ID)
+					if a.selectedReq != nil && a.selectedReq.ID == r.ID {
+						a.selectedReq = nil
+					}
+				} else {
+					remaining = append(remaining, r)
+				}
 			}
-			a.showNotify(fmt.Sprintf("Exported %d requests to '%s'", len(a.requests), path), false)
+			a.requests = remaining
+			_ = a.store.DeleteCollection(context.Background(), colToDelete.ID)
+			for i, c := range a.collections {
+				if c.ID == colToDelete.ID {
+					a.collections = append(a.collections[:i], a.collections[i+1:]...)
+					break
+				}
+			}
+			a.requestList.setRequests(a.requests)
+			a.collectionList.setRequests(a.requests)
+			a.collectionList.setCollections(a.collections)
+			a.setStatus("Deleted: " + colToDelete.Name)
+		})
+
+	case "rename_collection":
+		if col := a.collectionList.selectedCollection(); col != nil {
+			colToRename := col
+			a.promptInput("Rename collection:", colToRename.Name, func(name string) {
+				if name != "" {
+					colToRename.Name = name
+					_ = a.store.SaveCollection(context.Background(), colToRename)
+					a.collectionList.setCollections(a.collections)
+					a.setStatus("Renamed to '" + name + "'")
+				}
+			})
+		}
+
+	case "edit_variables":
+		if col := a.collectionList.selectedCollection(); col != nil {
+			a.openVarsModal(col)
+		} else {
+			a.setStatus("Select a collection first")
+		}
+
+	case "collection_select":
+		node := a.collectionList.selectedNode()
+		if node == nil {
+			break
+		}
+		switch node.kind {
+		case colNodeCollection, colNodeFolder:
+			a.collectionList.toggle()
+		case colNodeRequest:
+			if req, ok := a.collectionList.requestIndex[node.requestID]; ok {
+				a.selectRequest(req)
+				a.focused = PanelEditor
+			}
+		}
+
+	case "add_request_to_collection":
+		col := a.collectionList.selectedCollection()
+		if col == nil {
+			a.setStatus("Select a collection first")
+			break
+		}
+		targetCol := col
+		a.promptInput("Request name:", "New Request", func(name string) {
+			req := &models.Request{
+				Name:         name,
+				Method:       models.MethodGET,
+				URL:          "",
+				Headers:      []models.Header{},
+				QueryParams:  []models.QueryParam{},
+				Body:         models.Body{Type: models.BodyNone},
+				Auth:         models.Auth{Type: models.AuthNone},
+				CollectionID: targetCol.ID,
+			}
+			_ = a.store.SaveRequest(context.Background(), req)
+			a.requests = append(a.requests, req)
+			targetCol.RequestIDs = append(targetCol.RequestIDs, req.ID)
+			_ = a.store.SaveCollection(context.Background(), targetCol)
+			a.requestList.setRequests(a.requests)
+			a.collectionList.setRequests(a.requests)
+			a.collectionList.rebuild()
+			a.selectRequest(req)
+			a.focused = PanelEditor
+			a.setStatus("Created '" + name + "' in '" + targetCol.Name + "'")
 		})
 	}
 
@@ -255,11 +478,78 @@ func (a *App) executeRequest() tea.Cmd {
 	req := a.selectedReq
 	httpClient := a.httpClient
 
+	var envVars map[string]string
+	if req.CollectionID != "" {
+		for _, col := range a.collections {
+			if col.ID == req.CollectionID && len(col.Variables) > 0 {
+				envVars = make(map[string]string, len(col.Variables))
+				for k, v := range col.Variables {
+					envVars[k] = v
+				}
+				break
+			}
+		}
+	}
+
 	return func() tea.Msg {
-		resp, err := httpClient.Execute(context.Background(), req, nil)
+		resp, err := httpClient.Execute(context.Background(), req, envVars)
 		if err != nil {
 			return ErrorMsg{Err: err}
 		}
 		return ResponseReceivedMsg{Response: resp}
 	}
+}
+
+func (a *App) executeCollectionRequest() tea.Cmd {
+	node := a.collectionList.selectedNode()
+	if node == nil || node.kind != colNodeRequest {
+		a.setStatus("Select a request first")
+		return nil
+	}
+	req, ok := a.collectionList.requestIndex[node.requestID]
+	if !ok || req == nil {
+		a.setStatus("Request not found")
+		return nil
+	}
+	if req.URL == "" {
+		a.setStatus("URL is empty")
+		return nil
+	}
+
+	a.executing = true
+	a.setStatus("Executing...")
+
+	var envVars map[string]string
+	if node.collection != nil && len(node.collection.Variables) > 0 {
+		envVars = make(map[string]string, len(node.collection.Variables))
+		for k, v := range node.collection.Variables {
+			envVars[k] = v
+		}
+	}
+
+	httpClient := a.httpClient
+	return func() tea.Msg {
+		resp, err := httpClient.Execute(context.Background(), req, envVars)
+		if err != nil {
+			return ErrorMsg{Err: err}
+		}
+		return ResponseReceivedMsg{Response: resp}
+	}
+}
+
+func removeStringSlice(slice []string, val string) []string {
+out := slice[:0]
+for _, s := range slice {
+if s != val {
+out = append(out, s)
+}
+}
+return out
+}
+
+func removeRequestFromFolders(folders []models.Folder, id string) {
+for i := range folders {
+folders[i].RequestIDs = removeStringSlice(folders[i].RequestIDs, id)
+removeRequestFromFolders(folders[i].Folders, id)
+}
 }

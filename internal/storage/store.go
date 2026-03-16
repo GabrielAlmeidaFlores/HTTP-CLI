@@ -101,6 +101,13 @@ func (s *Store) ListCollections(ctx context.Context) ([]*models.Collection, erro
 	return result, nil
 }
 
+func (s *Store) DeleteCollection(ctx context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.collections, id)
+	return s.persistCollections()
+}
+
 func (s *Store) SaveEnvironment(ctx context.Context, env *models.Environment) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

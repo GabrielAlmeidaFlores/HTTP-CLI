@@ -144,6 +144,14 @@
         "description": "Response panel",
         "category": "Panels",
         "visible": true
+      },
+      "focus_panel_4": {
+        "keys": [
+          "4"
+        ],
+        "description": "Collections panel",
+        "category": "Panels",
+        "visible": true
       }
     },
     "request_list": {
@@ -168,22 +176,6 @@
           "E"
         ],
         "description": "Export cURL",
-        "category": "Requests",
-        "visible": true
-      },
-      "import_postman": {
-        "keys": [
-          "P"
-        ],
-        "description": "Import Postman",
-        "category": "Requests",
-        "visible": true
-      },
-      "export_postman": {
-        "keys": [
-          "X"
-        ],
-        "description": "Export Postman",
         "category": "Requests",
         "visible": true
       },
@@ -224,6 +216,14 @@
           "ctrl+e"
         ],
         "description": "Send request",
+        "category": "Requests",
+        "visible": true
+      },
+      "add_request_to_collection": {
+        "keys": [
+          "a"
+        ],
+        "description": "Add to collection",
         "category": "Requests",
         "visible": true
       }
@@ -488,88 +488,155 @@
     },
     "response": {
       "open_viewer": {
-        "keys": ["v"],
+        "keys": [
+          "v"
+        ],
         "description": "Open vim viewer",
         "category": "Response",
         "visible": true
       },
       "copy_body": {
-        "keys": ["y"],
+        "keys": [
+          "y"
+        ],
         "description": "Copy response",
         "category": "Response",
         "visible": true
       },
       "execute": {
-        "keys": ["ctrl+e"],
+        "keys": [
+          "ctrl+e"
+        ],
         "description": "Send request",
         "category": "Response",
         "visible": false
       },
       "next_tab": {
-        "keys": ["l"],
+        "keys": [
+          "l"
+        ],
         "description": "Next tab",
         "category": "Response",
         "visible": true
       },
       "prev_tab": {
-        "keys": ["h"],
+        "keys": [
+          "h"
+        ],
         "description": "Prev tab",
         "category": "Response",
         "visible": false
       },
       "scroll_down": {
-        "keys": ["j", "down"],
+        "keys": [
+          "j",
+          "down"
+        ],
         "description": "Scroll down",
         "category": "Response",
         "visible": false
       },
       "scroll_up": {
-        "keys": ["k", "up"],
+        "keys": [
+          "k",
+          "up"
+        ],
         "description": "Scroll up",
         "category": "Response",
         "visible": false
       },
       "scroll_top": {
-        "keys": ["g"],
+        "keys": [
+          "g"
+        ],
         "description": "Top",
         "category": "Response",
         "visible": false
       },
       "scroll_bottom": {
-        "keys": ["G"],
+        "keys": [
+          "G"
+        ],
         "description": "Bottom",
         "category": "Response",
         "visible": false
       },
       "half_page_down": {
-        "keys": ["ctrl+d"],
+        "keys": [
+          "ctrl+d"
+        ],
         "description": "Half page down",
         "category": "Response",
         "visible": false
       },
       "half_page_up": {
-        "keys": ["ctrl+u"],
+        "keys": [
+          "ctrl+u"
+        ],
         "description": "Half page up",
         "category": "Response",
         "visible": false
       },
       "tab_1": {
-        "keys": ["1"],
+        "keys": [
+          "1"
+        ],
         "description": "Body tab",
         "category": "Response",
         "visible": false
       },
       "tab_2": {
-        "keys": ["2"],
+        "keys": [
+          "2"
+        ],
         "description": "Headers tab",
         "category": "Response",
         "visible": false
       },
       "tab_3": {
-        "keys": ["3"],
+        "keys": [
+          "3"
+        ],
         "description": "Info tab",
         "category": "Response",
         "visible": false
+      }
+    },
+    "confirm_modal": {
+      "confirm": {
+        "keys": [
+          "enter"
+        ],
+        "description": "Confirm",
+        "category": "Confirm",
+        "visible": true
+      },
+      "cancel": {
+        "keys": [
+          "n",
+          "esc"
+        ],
+        "description": "Cancel",
+        "category": "Confirm",
+        "visible": true
+      }
+    },
+    "input_modal": {
+      "confirm": {
+        "keys": [
+          "enter"
+        ],
+        "description": "Confirm",
+        "category": "Input",
+        "visible": true
+      },
+      "cancel": {
+        "keys": [
+          "esc"
+        ],
+        "description": "Cancel",
+        "category": "Input",
+        "visible": true
       }
     },
     "cell_edit_modal": {
@@ -652,10 +719,138 @@
       },
       "close": {
         "keys": [
-          "esc"
+          "esc",
+          "enter",
+          "q"
         ],
         "description": "Close",
         "category": "cURL Export",
+        "visible": true
+      }
+    },
+    "vars_modal": {
+      "new_row": {
+        "keys": [
+          "n"
+        ],
+        "description": "New variable",
+        "category": "Variables",
+        "visible": true
+      },
+      "delete_row": {
+        "keys": [
+          "d"
+        ],
+        "description": "Delete",
+        "category": "Variables",
+        "visible": true
+      },
+      "edit_cell": {
+        "keys": [
+          "e"
+        ],
+        "description": "Edit",
+        "category": "Variables",
+        "visible": true
+      },
+      "close": {
+        "keys": [
+          "esc",
+          "q"
+        ],
+        "description": "Close",
+        "category": "Variables",
+        "visible": true
+      }
+    },
+    "collection_list": {
+      "nav_hint": {
+        "keys": [
+          "\u2191\u2193"
+        ],
+        "description": "Navigate",
+        "category": "Collections",
+        "visible": true
+      },
+      "collection_select": {
+        "keys": [
+          "enter",
+          "space"
+        ],
+        "description": "Expand/open",
+        "category": "Collections",
+        "visible": true
+      },
+      "execute_collection_request": {
+        "keys": [
+          "ctrl+e"
+        ],
+        "description": "Execute request",
+        "category": "Collections",
+        "visible": true
+      },
+      "import_curl": {
+        "keys": [
+          "I"
+        ],
+        "description": "Import cURL",
+        "category": "Collections",
+        "visible": true
+      },
+      "export_curl": {
+        "keys": [
+          "E"
+        ],
+        "description": "Export cURL",
+        "category": "Collections",
+        "visible": true
+      },
+      "new_collection": {
+        "keys": [
+          "n"
+        ],
+        "description": "New collection",
+        "category": "Collections",
+        "visible": true
+      },
+      "import_collection": {
+        "keys": [
+          "P"
+        ],
+        "description": "Import collection",
+        "category": "Collections",
+        "visible": true
+      },
+      "delete_collection": {
+        "keys": [
+          "d"
+        ],
+        "description": "Delete",
+        "category": "Collections",
+        "visible": true
+      },
+      "rename_collection": {
+        "keys": [
+          "r"
+        ],
+        "description": "Rename",
+        "category": "Collections",
+        "visible": true
+      },
+      "add_request_to_collection": {
+        "keys": [
+          "a"
+        ],
+        "description": "Add request",
+        "category": "Collections",
+        "visible": true
+      },
+      "edit_variables": {
+        "keys": [
+          "v"
+        ],
+        "description": "Variables",
+        "category": "Collections",
         "visible": true
       }
     }

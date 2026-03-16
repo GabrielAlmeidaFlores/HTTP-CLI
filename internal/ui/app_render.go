@@ -63,10 +63,12 @@ func (a *App) renderTopBar() string {
 }
 
 func (a *App) renderMainArea() string {
-	leftPanel := a.requestList.view(a.focused == PanelRequestList, a.cfg.UI.Theme)
+	reqListView := a.requestList.view(a.focused == PanelRequestList, a.cfg.UI.Theme)
+	colListView := a.collectionList.view(a.focused == PanelCollectionList, a.cfg.UI.Theme)
+	leftPanel := lipgloss.JoinVertical(lipgloss.Left, reqListView, colListView)
+
 	rightTop := a.editor.view(a.focused == PanelEditor, a.cfg.UI.Theme)
 	rightBottom := a.response.view(a.focused == PanelResponse, a.cfg.UI.Theme)
-
 	right := lipgloss.JoinVertical(lipgloss.Left, rightTop, rightBottom)
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, leftPanel, right)
@@ -134,7 +136,7 @@ func (a *App) renderHints() string {
 		executeHints := a.keybindMgr.GetHints("editor", "")
 		alreadyHasExecute := false
 		for _, h := range hints {
-			if h.Action == "execute" {
+			if h.Action == "execute" || h.Action == "execute_request" || h.Action == "execute_collection_request" {
 				alreadyHasExecute = true
 				break
 			}
@@ -210,6 +212,63 @@ func (a *App) renderModal(content string) string {
 func (a *App) renderModalOverlay(content string, w int) string {
 	modal := modalBorderStyle(a.theme.Primary).Padding(1, 2).Width(w).Render(content)
 	return overlayCenter(a.renderBackground(), modal, a.width, a.height)
+}
+
+func (a *App) renderConfirmModal() string {
+	titleStyle := accentStyle(a.theme).Bold(true)
+	hintsRow := a.buildModalHints("confirm_modal", accentStyle(a.theme).Bold(true), dimStyle(a.theme))
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render(a.confirmMsg),
+		"",
+		hintsRow,
+	)
+	return a.renderModal(body)
+}
+
+func (a *App) renderInputModal() string {
+	runes := []rune(a.inputValue)
+	n := len(runes)
+	cur := a.inputCursor
+
+	w := a.width / 2
+	if w < 40 {
+		w = 40
+	}
+	inputW := w - 8
+	if inputW < 8 {
+		inputW = 8
+	}
+	if cur < a.inputViewOffset {
+		a.inputViewOffset = cur
+	}
+	if cur >= a.inputViewOffset+inputW-1 {
+		a.inputViewOffset = cur - inputW + 2
+	}
+	viewStart := a.inputViewOffset
+	viewEnd := viewStart + inputW - 1
+	if viewEnd > n {
+		viewEnd = n
+	}
+	if viewStart > n {
+		viewStart = n
+	}
+	visibleBefore := runes[viewStart:cur]
+	var visibleAfter []rune
+	if cur < viewEnd {
+		visibleAfter = runes[cur:viewEnd]
+	}
+	display := string(visibleBefore) + "█" + string(visibleAfter)
+
+	titleStyle := accentStyle(a.theme).Bold(true)
+	hintsRow := a.buildModalHints("input_modal", accentStyle(a.theme).Bold(true), dimStyle(a.theme))
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render(a.inputTitle),
+		"",
+		display,
+		"",
+		hintsRow,
+	)
+	return a.renderModal(body)
 }
 
 func (a *App) renderCellEditModal() string {
@@ -408,6 +467,48 @@ func (a *App) renderNotificationModal() string {
 
 	bg := a.renderBackground()
 	return overlayCenter(bg, modal, a.width, a.height)
+}
+
+func (a *App) renderVarsModal() string {
+	w := a.width * 2 / 3
+	if w < 60 {
+		w = 60
+	}
+	if w > 100 {
+		w = 100
+	}
+	contentW := w - 6
+
+	name := ""
+	if a.varsCollection != nil {
+		name = a.varsCollection.Name
+	}
+
+	titleStyle := accentStyle(a.theme).Bold(true)
+	dimKey := accentStyle(a.theme).Bold(true)
+	dimDesc := dimStyle(a.theme)
+	hintsRow := a.buildModalHints("vars_modal", dimKey, dimDesc)
+
+	table := a.varsTable.renderWithMaxRows(contentW, true, 10)
+
+	hint := dimStyle(a.theme).Render("Use {{variableName}} in URL, headers, query, body, auth")
+
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render("Variables — "+name),
+		"",
+		hint,
+		"",
+		table,
+		"",
+		hintsRow,
+	)
+
+	modal := modalBorderStyle(a.theme.Primary).
+		Padding(1, 2).
+		Width(w).
+		Render(body)
+
+	return overlayCenter(a.renderBackground(), modal, a.width, a.height)
 }
 
 func (a *App) buildModalHints(panel string, keyStyle, descStyle lipgloss.Style) string {

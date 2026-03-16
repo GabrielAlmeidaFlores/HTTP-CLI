@@ -39,12 +39,20 @@ func (a *App) handleKey(msg tea.KeyMsg) tea.Cmd {
 		return a.handleResponseKey(msg)
 	}
 
+	if a.focused == PanelCollectionList {
+		return a.handleCollectionListKey(msg)
+	}
+
 	binding, found := a.keybindMgr.Resolve(key, string(a.focused))
 	if !found {
 		binding, found = a.keybindMgr.Resolve(key, "global")
 	}
 
 	if found {
+		if binding.Action == "cancel" && a.focused == PanelRequestList {
+			a.focused = PanelEditor
+			return nil
+		}
 		return a.executeAction(binding.Action, binding.Panel)
 	}
 
@@ -95,10 +103,14 @@ func (a *App) handleResponseKey(msg tea.KeyMsg) tea.Cmd {
 	case "tab_3":
 		a.response.activeTab = responseTabInfo
 		a.response.scrollY = 0
+	case "execute", "execute_request":
+		return a.executeRequest()
 	case "next_panel":
 		a.nextPanel()
 	case "prev_panel":
 		a.prevPanel()
+	case "cancel":
+		a.focused = PanelEditor
 	default:
 		return a.executeAction(binding.Action, binding.Panel)
 	}
@@ -155,12 +167,34 @@ func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 		if a.selectedReq != nil && !a.editor.IsSubEditing() && a.editor.CurrentCellIsText() {
 			a.openCellEdit()
 		}
+	case "normal_mode":
+		if a.editor.IsSubEditing() {
+			a.editor.CancelSubEdit()
+		} else {
+			a.focused = PanelRequestList
+		}
 	default:
 		if a.selectedReq != nil {
 			return a.editor.handleKey(msg, a.selectedReq)
 		}
 	}
 
+	return nil
+}
+
+func (a *App) handleCollectionListKey(msg tea.KeyMsg) tea.Cmd {
+	key := msg.String()
+	binding, found := a.keybindMgr.Resolve(key, string(PanelCollectionList))
+	if !found {
+		binding, found = a.keybindMgr.Resolve(key, "global")
+	}
+	if found {
+		if binding.Action == "cancel" {
+			a.focused = PanelRequestList
+			return nil
+		}
+		return a.executeAction(binding.Action, binding.Panel)
+	}
 	return nil
 }
 
@@ -183,7 +217,7 @@ func (a *App) routeKeyToPanel(msg tea.KeyMsg) tea.Cmd {
 }
 
 func (a *App) nextPanel() {
-	panels := []FocusedPanel{PanelRequestList, PanelEditor, PanelResponse}
+	panels := []FocusedPanel{PanelRequestList, PanelCollectionList, PanelEditor, PanelResponse}
 	for i, p := range panels {
 		if p == a.focused {
 			a.focused = panels[(i+1)%len(panels)]
@@ -193,7 +227,7 @@ func (a *App) nextPanel() {
 }
 
 func (a *App) prevPanel() {
-	panels := []FocusedPanel{PanelRequestList, PanelEditor, PanelResponse}
+	panels := []FocusedPanel{PanelRequestList, PanelCollectionList, PanelEditor, PanelResponse}
 	for i, p := range panels {
 		if p == a.focused {
 			a.focused = panels[(i-1+len(panels))%len(panels)]
