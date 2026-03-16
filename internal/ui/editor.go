@@ -340,7 +340,7 @@ func (m *EditorModel) handleURLKey(key string, action string) {
 				m.urlCursor++
 			}
 		default:
-			if isPasteKey(key) {
+			if b, ok := m.keybindMgr.Resolve(key, "editor"); ok && b.Action == "paste" {
 				text, err := clipboard.ReadAll()
 				if err == nil {
 					m.urlEditVal, m.urlCursor = insertAtCursor(m.urlEditVal, m.urlCursor, text)
@@ -445,7 +445,7 @@ func (m *EditorModel) handleBodyTextKey(key string, action string) {
 				m.bodyCursor++
 			}
 		default:
-			if isPasteKey(key) {
+			if b, ok := m.keybindMgr.Resolve(key, "editor"); ok && b.Action == "paste" {
 				text, err := clipboard.ReadAll()
 				if err == nil {
 					m.bodyEditVal, m.bodyCursor = insertAtCursor(m.bodyEditVal, m.bodyCursor, text)
@@ -592,7 +592,7 @@ func (m *EditorModel) handleAuthKey(key string, action string) {
 				m.authCursor++
 			}
 		default:
-			if isPasteKey(key) {
+			if b, ok := m.keybindMgr.Resolve(key, "editor"); ok && b.Action == "paste" {
 				text, err := clipboard.ReadAll()
 				if err == nil {
 					m.authEditVal, m.authCursor = insertAtCursor(m.authEditVal, m.authCursor, text)

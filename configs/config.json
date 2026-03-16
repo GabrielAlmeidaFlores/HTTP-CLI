@@ -229,6 +229,14 @@
       }
     },
     "editor": {
+      "paste": {
+        "keys": [
+          "ctrl+V"
+        ],
+        "description": "Paste",
+        "category": "Editor",
+        "visible": false
+      },
       "insert_mode": {
         "keys": [
           "e"
@@ -622,6 +630,14 @@
       }
     },
     "input_modal": {
+      "paste": {
+        "keys": [
+          "ctrl+V"
+        ],
+        "description": "Paste",
+        "category": "Input",
+        "visible": false
+      },
       "confirm": {
         "keys": [
           "enter"
@@ -640,6 +656,14 @@
       }
     },
     "cell_edit_modal": {
+      "paste": {
+        "keys": [
+          "ctrl+V"
+        ],
+        "description": "Paste",
+        "category": "Cell Edit",
+        "visible": false
+      },
       "confirm_exit": {
         "keys": [
           "enter",
@@ -693,7 +717,7 @@
       },
       "paste": {
         "keys": [
-          "ctrl+v"
+          "ctrl+V"
         ],
         "description": "Paste",
         "category": "cURL Import",

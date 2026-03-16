@@ -37,6 +37,19 @@ func (a *App) openFilePickerExt(ext string, onSelect func(string)) {
 	a.showFilePicker = true
 }
 
+func (a *App) handlePaste(text string) {
+	switch {
+	case a.showFilePicker:
+		a.fp.applySearch(a.fp.search + text)
+	case a.showInput:
+		a.inputValue, a.inputCursor = insertAtCursor(a.inputValue, a.inputCursor, text)
+	case a.showCellEdit:
+		a.cellEditVal, a.cellEditCursor = insertAtCursor(a.cellEditVal, a.cellEditCursor, text)
+	case a.showCurlImport:
+		a.curlImportVal, a.curlImportCursor = insertAtCursor(a.curlImportVal, a.curlImportCursor, text)
+	}
+}
+
 func (a *App) handleFilePicker(msg tea.KeyMsg) tea.Cmd {
 	key := msg.String()
 	fp := &a.fp
@@ -124,6 +137,11 @@ func (a *App) handleInputDialog(msg tea.KeyMsg) tea.Cmd {
 		case "cancel":
 			a.showInput = false
 			return nil
+		case "paste":
+			if text, err := clipboard.ReadAll(); err == nil {
+				a.inputValue, a.inputCursor = insertAtCursor(a.inputValue, a.inputCursor, text)
+			}
+			return nil
 		}
 	}
 
@@ -146,12 +164,7 @@ func (a *App) handleInputDialog(msg tea.KeyMsg) tea.Cmd {
 	case "end":
 		a.inputCursor = n
 	default:
-		if isPasteKey(key) {
-			text, err := clipboard.ReadAll()
-			if err == nil {
-				a.inputValue, a.inputCursor = insertAtCursor(a.inputValue, a.inputCursor, text)
-			}
-		} else if len(key) == 1 {
+		if len(key) == 1 {
 			a.inputValue, a.inputCursor = insertAtCursor(a.inputValue, a.inputCursor, key)
 		}
 	}
@@ -197,6 +210,11 @@ func (a *App) handleCellEditModal(msg tea.KeyMsg) tea.Cmd {
 			return nil
 		case "open_external_editor":
 			return a.openExternalEditor(a.cellEditVal)
+		case "paste":
+			if text, err := clipboard.ReadAll(); err == nil {
+				a.cellEditVal, a.cellEditCursor = insertAtCursor(a.cellEditVal, a.cellEditCursor, text)
+			}
+			return nil
 		}
 	}
 
@@ -223,21 +241,14 @@ func (a *App) handleCellEditModal(msg tea.KeyMsg) tea.Cmd {
 	case "end", "ctrl+e":
 		a.cellEditCursor = n
 	default:
-		if isPasteKey(key) {
-			text, err := clipboard.ReadAll()
-			if err == nil {
-				a.cellEditVal, a.cellEditCursor = insertAtCursor(a.cellEditVal, a.cellEditCursor, text)
-			}
-		} else {
-			r := []rune(key)
-			if len(r) == 1 && r[0] >= 32 && r[0] != 127 {
-				newRunes := make([]rune, n+1)
-				copy(newRunes, runes[:a.cellEditCursor])
-				newRunes[a.cellEditCursor] = r[0]
-				copy(newRunes[a.cellEditCursor+1:], runes[a.cellEditCursor:])
-				a.cellEditVal = string(newRunes)
-				a.cellEditCursor++
-			}
+		r := []rune(key)
+		if len(r) == 1 && r[0] >= 32 && r[0] != 127 {
+			newRunes := make([]rune, n+1)
+			copy(newRunes, runes[:a.cellEditCursor])
+			newRunes[a.cellEditCursor] = r[0]
+			copy(newRunes[a.cellEditCursor+1:], runes[a.cellEditCursor:])
+			a.cellEditVal = string(newRunes)
+			a.cellEditCursor++
 		}
 	}
 	return nil
@@ -301,21 +312,14 @@ func (a *App) handleCurlImportModal(msg tea.KeyMsg) tea.Cmd {
 	case "end", "ctrl+e":
 		a.curlImportCursor = n
 	default:
-		if isPasteKey(key) {
-			text, err := clipboard.ReadAll()
-			if err == nil {
-				a.curlImportVal, a.curlImportCursor = insertAtCursor(a.curlImportVal, a.curlImportCursor, text)
-			}
-		} else {
-			r := []rune(key)
-			if len(r) == 1 && r[0] >= 32 && r[0] != 127 {
-				newRunes := make([]rune, n+1)
-				copy(newRunes, runes[:a.curlImportCursor])
-				newRunes[a.curlImportCursor] = r[0]
-				copy(newRunes[a.curlImportCursor+1:], runes[a.curlImportCursor:])
-				a.curlImportVal = string(newRunes)
-				a.curlImportCursor++
-			}
+		r := []rune(key)
+		if len(r) == 1 && r[0] >= 32 && r[0] != 127 {
+			newRunes := make([]rune, n+1)
+			copy(newRunes, runes[:a.curlImportCursor])
+			newRunes[a.curlImportCursor] = r[0]
+			copy(newRunes[a.curlImportCursor+1:], runes[a.curlImportCursor:])
+			a.curlImportVal = string(newRunes)
+			a.curlImportCursor++
 		}
 	}
 	return nil

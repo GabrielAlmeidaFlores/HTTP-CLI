@@ -128,7 +128,7 @@ func (t *kvTable) handleEditKey(key string) bool {
 		}
 		return true
 	default:
-		if isPasteKey(key) {
+		if b, ok := t.km.Resolve(key, "editor"); ok && b.Action == "paste" {
 			text, err := clipboard.ReadAll()
 			if err == nil {
 				t.editVal, t.editCursor = insertAtCursor(t.editVal, t.editCursor, text)

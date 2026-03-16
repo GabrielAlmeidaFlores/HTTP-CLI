@@ -129,7 +129,7 @@ func NewApp(cfg *config.Config, store RequestStore, httpClient HTTPExecutor, par
 }
 
 func (a *App) Init() tea.Cmd {
-	return tea.Batch(a.loadRequests(), a.loadCollections())
+	return tea.Batch(a.loadRequests(), a.loadCollections(), tea.EnableBracketedPaste)
 }
 
 func (a *App) loadRequests() tea.Cmd {
@@ -176,6 +176,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return a, tea.Quit
+		}
+		if msg.Paste {
+			a.handlePaste(string(msg.Runes))
+			break
 		}
 		if a.showConfirm {
 			cmds = append(cmds, a.handleConfirmInput(msg))

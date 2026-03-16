@@ -50,10 +50,6 @@ func isPrintable(key string) bool {
 	return r >= 32 && r != 127
 }
 
-func isPasteKey(key string) bool {
-	return key == "ctrl+v" || key == "ctrl+V"
-}
-
 func formatSize(bytes int64) string {
 	switch {
 	case bytes < 1024:
