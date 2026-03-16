@@ -231,7 +231,7 @@
     "editor": {
       "paste": {
         "keys": [
-          "ctrl+V"
+          "ctrl+shift+v"
         ],
         "description": "Paste",
         "category": "Editor",
@@ -632,7 +632,7 @@
     "input_modal": {
       "paste": {
         "keys": [
-          "ctrl+V"
+          "ctrl+shift+v"
         ],
         "description": "Paste",
         "category": "Input",
@@ -658,7 +658,7 @@
     "cell_edit_modal": {
       "paste": {
         "keys": [
-          "ctrl+V"
+          "ctrl+shift+v"
         ],
         "description": "Paste",
         "category": "Cell Edit",
@@ -706,6 +706,58 @@
         "visible": true
       }
     },
+    "file_picker": {
+      "down": {
+        "keys": [
+          "j",
+          "down"
+        ],
+        "description": "Move down",
+        "category": "File Picker",
+        "visible": true
+      },
+      "up": {
+        "keys": [
+          "k",
+          "up"
+        ],
+        "description": "Move up",
+        "category": "File Picker",
+        "visible": true
+      },
+      "select": {
+        "keys": [
+          "enter"
+        ],
+        "description": "Open / select",
+        "category": "File Picker",
+        "visible": true
+      },
+      "go_up": {
+        "keys": [
+          "backspace"
+        ],
+        "description": "Delete char / go up",
+        "category": "File Picker",
+        "visible": true
+      },
+      "home_dir": {
+        "keys": [
+          "~"
+        ],
+        "description": "Go to home",
+        "category": "File Picker",
+        "visible": true
+      },
+      "cancel": {
+        "keys": [
+          "esc"
+        ],
+        "description": "Clear / quit",
+        "category": "File Picker",
+        "visible": true
+      }
+    },
     "curl_import_modal": {
       "import": {
         "keys": [
@@ -717,7 +769,7 @@
       },
       "paste": {
         "keys": [
-          "ctrl+V"
+          "ctrl+shift+v"
         ],
         "description": "Paste",
         "category": "cURL Import",

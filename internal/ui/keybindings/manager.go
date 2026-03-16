@@ -53,6 +53,7 @@ func (m *Manager) loadFromConfig(cfg *config.Config) {
 		"cell_edit_modal":   10,
 		"curl_import_modal": 10,
 		"curl_export_modal": 10,
+		"file_picker":       10,
 		"vim_viewer":        10,
 	}
 

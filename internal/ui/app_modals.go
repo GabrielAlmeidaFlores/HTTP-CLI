@@ -50,56 +50,6 @@ func (a *App) handlePaste(text string) {
 	}
 }
 
-func (a *App) handleFilePicker(msg tea.KeyMsg) tea.Cmd {
-	key := msg.String()
-	fp := &a.fp
-	n := len(fp.filtered)
-	switch key {
-	case "j", "down":
-		if fp.cursor < n-1 {
-			fp.cursor++
-		}
-	case "k", "up":
-		if fp.cursor > 0 {
-			fp.cursor--
-		}
-	case "enter":
-		if n == 0 {
-			return nil
-		}
-		isDir := fp.enterSelected()
-		if !isDir {
-			path := fp.selectedPath()
-			a.showFilePicker = false
-			if fp.onSelect != nil {
-				fp.onSelect(path)
-			}
-		}
-	case "backspace":
-		if fp.search != "" {
-			runes := []rune(fp.search)
-			fp.applySearch(string(runes[:len(runes)-1]))
-		} else {
-			fp.goUp()
-		}
-	case "~":
-		if home, err := os.UserHomeDir(); err == nil {
-			fp.navigate(home)
-		}
-	case "esc":
-		if fp.search != "" {
-			fp.applySearch("")
-		} else {
-			a.showFilePicker = false
-		}
-	default:
-		if isPrintable(key) && key != "~" {
-			fp.applySearch(fp.search + key)
-		}
-	}
-	return nil
-}
-
 func (a *App) showNotify(msg string, isErr bool) {
 	a.notificationMsg = msg
 	a.notificationIsErr = isErr
@@ -406,84 +356,84 @@ func (a *App) openResponseInEditor() tea.Cmd {
 }
 
 func (a *App) openVarsModal(col *models.Collection) {
-a.varsCollection = col
-rows := make([]kvRow, 0, len(col.Variables))
-for k, v := range col.Variables {
-rows = append(rows, kvRow{enabled: true, key: k, value: v})
-}
-a.varsTable = newKvTable(rows, a.keybindMgr, a.theme)
-a.varsTable.colIdx = 1
-a.showVarsModal = true
+	a.varsCollection = col
+	rows := make([]kvRow, 0, len(col.Variables))
+	for k, v := range col.Variables {
+		rows = append(rows, kvRow{enabled: true, key: k, value: v})
+	}
+	a.varsTable = newKvTable(rows, a.keybindMgr, a.theme)
+	a.varsTable.colIdx = 1
+	a.showVarsModal = true
 }
 
 func (a *App) handleVarsModal(msg tea.KeyMsg) tea.Cmd {
-key := msg.String()
+	key := msg.String()
 
-if binding, ok := a.keybindMgr.Resolve(key, "vars_modal"); ok {
-switch binding.Action {
-case "close":
-a.saveVarsFromTable()
-a.showVarsModal = false
-return nil
-case "new_row":
-a.varsTable.rows = append(a.varsTable.rows, kvRow{enabled: true})
-a.varsTable.rowIdx = len(a.varsTable.rows) - 1
-a.varsTable.colIdx = 1
-return nil
-case "delete_row":
-if len(a.varsTable.rows) > 0 {
-i := a.varsTable.rowIdx
-a.varsTable.rows = append(a.varsTable.rows[:i], a.varsTable.rows[i+1:]...)
-if a.varsTable.rowIdx >= len(a.varsTable.rows) && a.varsTable.rowIdx > 0 {
-a.varsTable.rowIdx--
-}
-a.saveVarsFromTable()
-}
-return nil
-case "edit_cell":
-if len(a.varsTable.rows) == 0 {
-return nil
-}
-row := a.varsTable.rows[a.varsTable.rowIdx]
-isKey := a.varsTable.colIdx == 1
-title := "Value"
-val := row.value
-if isKey {
-title = "Key"
-val = row.key
-}
-a.cellEditTitle = title
-a.cellEditVal = val
-a.cellEditCursor = len([]rune(val))
-a.cellEditCommit = func(newVal string) {
-if a.varsTable.rowIdx < len(a.varsTable.rows) {
-if isKey {
-a.varsTable.rows[a.varsTable.rowIdx].key = newVal
-} else {
-a.varsTable.rows[a.varsTable.rowIdx].value = newVal
-}
-a.saveVarsFromTable()
-}
-}
-a.showCellEdit = true
-return nil
-}
-}
+	if binding, ok := a.keybindMgr.Resolve(key, "vars_modal"); ok {
+		switch binding.Action {
+		case "close":
+			a.saveVarsFromTable()
+			a.showVarsModal = false
+			return nil
+		case "new_row":
+			a.varsTable.rows = append(a.varsTable.rows, kvRow{enabled: true})
+			a.varsTable.rowIdx = len(a.varsTable.rows) - 1
+			a.varsTable.colIdx = 1
+			return nil
+		case "delete_row":
+			if len(a.varsTable.rows) > 0 {
+				i := a.varsTable.rowIdx
+				a.varsTable.rows = append(a.varsTable.rows[:i], a.varsTable.rows[i+1:]...)
+				if a.varsTable.rowIdx >= len(a.varsTable.rows) && a.varsTable.rowIdx > 0 {
+					a.varsTable.rowIdx--
+				}
+				a.saveVarsFromTable()
+			}
+			return nil
+		case "edit_cell":
+			if len(a.varsTable.rows) == 0 {
+				return nil
+			}
+			row := a.varsTable.rows[a.varsTable.rowIdx]
+			isKey := a.varsTable.colIdx == 1
+			title := "Value"
+			val := row.value
+			if isKey {
+				title = "Key"
+				val = row.key
+			}
+			a.cellEditTitle = title
+			a.cellEditVal = val
+			a.cellEditCursor = len([]rune(val))
+			a.cellEditCommit = func(newVal string) {
+				if a.varsTable.rowIdx < len(a.varsTable.rows) {
+					if isKey {
+						a.varsTable.rows[a.varsTable.rowIdx].key = newVal
+					} else {
+						a.varsTable.rows[a.varsTable.rowIdx].value = newVal
+					}
+					a.saveVarsFromTable()
+				}
+			}
+			a.showCellEdit = true
+			return nil
+		}
+	}
 
-a.varsTable.handleKey(key)
-return nil
+	a.varsTable.handleKey(key)
+	return nil
 }
 
 func (a *App) saveVarsFromTable() {
-if a.varsCollection == nil {
-return
-}
-vars := make(map[string]string)
-for _, row := range a.varsTable.rows {
-if row.key != "" {
-vars[row.key] = row.value
-}
-}
-a.varsCollection.Variables = vars
-_ = a.store.SaveCollection(context.Background(), a.varsCollection)
+	if a.varsCollection == nil {
+		return
+	}
+	vars := make(map[string]string)
+	for _, row := range a.varsTable.rows {
+		if row.key != "" {
+			vars[row.key] = row.value
+		}
+	}
+	a.varsCollection.Variables = vars
+	_ = a.store.SaveCollection(context.Background(), a.varsCollection)
 }

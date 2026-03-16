@@ -231,13 +231,7 @@ func (a *App) renderFilePickerModal() string {
 	modalW := modalWidth(a.width)
 	innerW := modalW - 2
 
-	listH := a.height/2 - 7
-	if listH < 3 {
-		listH = 3
-	}
-	if listH > 20 {
-		listH = 20
-	}
+	listH := a.fpListHeight()
 
 	titleStyle := accentStyle(a.theme).Bold(true)
 	dim := dimStyle(a.theme)
@@ -245,13 +239,6 @@ func (a *App) renderFilePickerModal() string {
 	selStyle := lipgloss.NewStyle().
 		Background(lipgloss.Color(a.theme.SelectionBg)).
 		Bold(true)
-
-	if fp.cursor < fp.scrollOff {
-		fp.scrollOff = fp.cursor
-	}
-	if fp.cursor >= fp.scrollOff+listH {
-		fp.scrollOff = fp.cursor - listH + 1
-	}
 
 	path := fp.currentDir
 	if pr := []rune(path); len(pr) > innerW {
@@ -300,7 +287,7 @@ func (a *App) renderFilePickerModal() string {
 	}
 
 	separator := strings.Repeat("-", innerW)
-	hints := dim.Render("j/k move  enter open/select  backspace del/go up  ~ home  esc clear/quit")
+	hintsRow := a.buildModalHints("file_picker", accentStyle(a.theme).Bold(true), dimStyle(a.theme))
 
 	body := lipgloss.JoinVertical(lipgloss.Left,
 		titleStyle.Render(title),
@@ -309,7 +296,7 @@ func (a *App) renderFilePickerModal() string {
 		dim.Render(separator),
 		strings.Join(lines, "\n"),
 		"",
-		hints,
+		hintsRow,
 	)
 
 	return a.renderModalOverlay(body, modalW)

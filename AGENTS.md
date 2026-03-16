@@ -573,7 +573,7 @@ These are text-widget-level controls, NOT user-configurable actions:
 | `left`/`right` | Move cursor in text input |
 | `home`/`end`/`ctrl+a`/`ctrl+e` | Cursor home/end in text input |
 | `ctrl+j` | Insert newline in textarea |
-| `ctrl+v` | Paste in import modal |
+| `ctrl+shift+v` | Paste in import modal |
 | `up`/`down` in selectBox | Navigate open dropdown |
 
 ---

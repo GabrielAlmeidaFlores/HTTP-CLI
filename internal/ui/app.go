@@ -81,9 +81,9 @@ type App struct {
 	notificationMsg   string
 	notificationIsErr bool
 
-	showVarsModal   bool
-	varsCollection  *models.Collection
-	varsTable       kvTable
+	showVarsModal  bool
+	varsCollection *models.Collection
+	varsTable      kvTable
 
 	showFilePicker bool
 	fp             filePicker

@@ -542,18 +542,18 @@ func (a *App) executeCollectionRequest() tea.Cmd {
 }
 
 func removeStringSlice(slice []string, val string) []string {
-out := slice[:0]
-for _, s := range slice {
-if s != val {
-out = append(out, s)
-}
-}
-return out
+	out := slice[:0]
+	for _, s := range slice {
+		if s != val {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 func removeRequestFromFolders(folders []models.Folder, id string) {
-for i := range folders {
-folders[i].RequestIDs = removeStringSlice(folders[i].RequestIDs, id)
-removeRequestFromFolders(folders[i].Folders, id)
-}
+	for i := range folders {
+		folders[i].RequestIDs = removeStringSlice(folders[i].RequestIDs, id)
+		removeRequestFromFolders(folders[i].Folders, id)
+	}
 }
