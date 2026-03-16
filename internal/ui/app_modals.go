@@ -26,6 +26,67 @@ func (a *App) promptInput(title, defaultVal string, action func(string)) {
 	a.inputAction = action
 }
 
+func (a *App) openFilePicker(onSelect func(string)) {
+	a.fp = newFilePicker(onSelect)
+	a.showFilePicker = true
+}
+
+func (a *App) openFilePickerExt(ext string, onSelect func(string)) {
+	a.fp = newFilePicker(onSelect)
+	a.fp.filterExt = ext
+	a.showFilePicker = true
+}
+
+func (a *App) handleFilePicker(msg tea.KeyMsg) tea.Cmd {
+	key := msg.String()
+	fp := &a.fp
+	n := len(fp.filtered)
+	switch key {
+	case "j", "down":
+		if fp.cursor < n-1 {
+			fp.cursor++
+		}
+	case "k", "up":
+		if fp.cursor > 0 {
+			fp.cursor--
+		}
+	case "enter":
+		if n == 0 {
+			return nil
+		}
+		isDir := fp.enterSelected()
+		if !isDir {
+			path := fp.selectedPath()
+			a.showFilePicker = false
+			if fp.onSelect != nil {
+				fp.onSelect(path)
+			}
+		}
+	case "backspace":
+		if fp.search != "" {
+			runes := []rune(fp.search)
+			fp.applySearch(string(runes[:len(runes)-1]))
+		} else {
+			fp.goUp()
+		}
+	case "~":
+		if home, err := os.UserHomeDir(); err == nil {
+			fp.navigate(home)
+		}
+	case "esc":
+		if fp.search != "" {
+			fp.applySearch("")
+		} else {
+			a.showFilePicker = false
+		}
+	default:
+		if isPrintable(key) && key != "~" {
+			fp.applySearch(fp.search + key)
+		}
+	}
+	return nil
+}
+
 func (a *App) showNotify(msg string, isErr bool) {
 	a.notificationMsg = msg
 	a.notificationIsErr = isErr

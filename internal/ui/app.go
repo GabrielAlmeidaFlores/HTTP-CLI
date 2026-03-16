@@ -85,6 +85,9 @@ type App struct {
 	varsCollection  *models.Collection
 	varsTable       kvTable
 
+	showFilePicker bool
+	fp             filePicker
+
 	executing bool
 
 	lastResponse map[string]*models.Response
@@ -171,8 +174,15 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.response.setSize(mw, responseH)
 
 	case tea.KeyMsg:
+		if msg.String() == "ctrl+c" {
+			return a, tea.Quit
+		}
 		if a.showConfirm {
 			cmds = append(cmds, a.handleConfirmInput(msg))
+			break
+		}
+		if a.showFilePicker {
+			cmds = append(cmds, a.handleFilePicker(msg))
 			break
 		}
 		if a.showInput {
@@ -276,6 +286,10 @@ func (a *App) View() string {
 
 	if a.showConfirm {
 		return a.renderConfirmModal()
+	}
+
+	if a.showFilePicker {
+		return a.renderFilePickerModal()
 	}
 
 	if a.showInput {

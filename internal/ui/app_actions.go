@@ -293,10 +293,10 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 		})
 
 	case "import_collection":
-		a.promptInput("Collection path (.json):", "", func(path string) {
-			reqs, col, err := parser.ParsePostmanCollection(expandPath(path))
+		a.openFilePickerExt(".json", func(path string) {
+			reqs, col, err := parser.ParsePostmanCollection(path)
 			if err != nil {
-				a.showNotify("Import failed: "+err.Error(), true)
+				a.showNotify("Import failed: select a .json file exported from Postman", true)
 				return
 			}
 			for _, req := range reqs {

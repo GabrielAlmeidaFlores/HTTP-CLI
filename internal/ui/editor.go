@@ -685,6 +685,19 @@ func (m *EditorModel) CurrentCellIsText() bool {
 	return false
 }
 
+func (m *EditorModel) CurrentCellIsFilePath() bool {
+	if m.activeTab != TabBody {
+		return false
+	}
+	if m.bodyFormTable.colIdx == 0 || m.bodyFormTable.colIdx == 1 {
+		return false
+	}
+	if m.bodyFormTable.rowIdx >= len(m.bodyFormTable.rows) {
+		return false
+	}
+	return m.bodyFormTable.rows[m.bodyFormTable.rowIdx].isFile
+}
+
 func (m *EditorModel) CurrentCellTitle() string {
 	switch m.activeTab {
 	case TabURL:

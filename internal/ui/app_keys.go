@@ -149,7 +149,7 @@ func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 			}
 		}
 	case "exit":
-		if a.selectedReq != nil && !a.editor.IsSubEditing() {
+		if !a.editor.IsSubEditing() {
 			return tea.Quit
 		}
 	case "search":
@@ -165,7 +165,15 @@ func (a *App) handleEditorKey(msg tea.KeyMsg) tea.Cmd {
 		}
 	case "insert_mode":
 		if a.selectedReq != nil && !a.editor.IsSubEditing() && a.editor.CurrentCellIsText() {
-			a.openCellEdit()
+			if a.editor.CurrentCellIsFilePath() {
+				a.openFilePicker(func(path string) {
+					a.editor.CommitCellValue(path)
+					_ = a.store.SaveRequest(context.Background(), a.selectedReq)
+					a.setStatus("Saved")
+				})
+			} else {
+				a.openCellEdit()
+			}
 		}
 	case "normal_mode":
 		if a.editor.IsSubEditing() {

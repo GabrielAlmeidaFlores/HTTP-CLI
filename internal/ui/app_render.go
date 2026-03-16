@@ -225,6 +225,96 @@ func (a *App) renderConfirmModal() string {
 	return a.renderModal(body)
 }
 
+func (a *App) renderFilePickerModal() string {
+	fp := &a.fp
+
+	modalW := modalWidth(a.width)
+	innerW := modalW - 2
+
+	listH := a.height/2 - 7
+	if listH < 3 {
+		listH = 3
+	}
+	if listH > 20 {
+		listH = 20
+	}
+
+	titleStyle := accentStyle(a.theme).Bold(true)
+	dim := dimStyle(a.theme)
+	dirStyle := accentStyle(a.theme)
+	selStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color(a.theme.SelectionBg)).
+		Bold(true)
+
+	if fp.cursor < fp.scrollOff {
+		fp.scrollOff = fp.cursor
+	}
+	if fp.cursor >= fp.scrollOff+listH {
+		fp.scrollOff = fp.cursor - listH + 1
+	}
+
+	path := fp.currentDir
+	if pr := []rune(path); len(pr) > innerW {
+		path = "..." + string(pr[len(pr)-innerW+3:])
+	}
+
+	entries := fp.filtered
+	fadedStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("238"))
+	var lines []string
+	for i := fp.scrollOff; i < fp.scrollOff+listH && i < len(entries); i++ {
+		e := entries[i]
+		prefix := "  "
+		name := e.name
+		if e.isDir {
+			name = e.name + "/"
+		}
+		label := truncate(prefix+name, innerW)
+		isMatch := fp.filterExt == "" || e.isDir || strings.HasSuffix(e.name, fp.filterExt)
+		if i == fp.cursor {
+			label = selStyle.Render(label)
+		} else if e.isDir {
+			label = dirStyle.Render(label)
+		} else if isMatch {
+			label = dim.Render(label)
+		} else {
+			label = fadedStyle.Render(label)
+		}
+		lines = append(lines, label)
+	}
+	if len(lines) == 0 {
+		lines = []string{dim.Render("  (no matches)")}
+	}
+
+	title := "Select File"
+	if fp.filterExt != "" {
+		title = fmt.Sprintf("Select File  [*%s]  (%d/%d)", fp.filterExt, fp.cursor+1, len(entries))
+	} else if len(entries) > 0 {
+		title = fmt.Sprintf("Select File  (%d/%d)", fp.cursor+1, len(entries))
+	}
+
+	var searchStr string
+	if fp.search == "" {
+		searchStr = dim.Render("/ type to filter...")
+	} else {
+		searchStr = dim.Render("/ " + fp.search + "_")
+	}
+
+	separator := strings.Repeat("-", innerW)
+	hints := dim.Render("j/k move  enter open/select  backspace del/go up  ~ home  esc clear/quit")
+
+	body := lipgloss.JoinVertical(lipgloss.Left,
+		titleStyle.Render(title),
+		dim.Render(path),
+		searchStr,
+		dim.Render(separator),
+		strings.Join(lines, "\n"),
+		"",
+		hints,
+	)
+
+	return a.renderModalOverlay(body, modalW)
+}
+
 func (a *App) renderInputModal() string {
 	runes := []rune(a.inputValue)
 	n := len(runes)
