@@ -3,6 +3,9 @@ package ui
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,6 +13,18 @@ import (
 	"github.com/user/http-cli/internal/models"
 	"github.com/user/http-cli/internal/parser"
 )
+
+func expandPath(path string) string {
+	if path == "~" || strings.HasPrefix(path, "~/") || strings.HasPrefix(path, `~\`) {
+		if home, err := os.UserHomeDir(); err == nil {
+			if path == "~" {
+				return home
+			}
+			return filepath.Join(home, path[2:])
+		}
+	}
+	return filepath.FromSlash(path)
+}
 
 func (a *App) executeAction(action, _ string) tea.Cmd {
 	switch action {
@@ -279,7 +294,7 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 
 	case "import_collection":
 		a.promptInput("Collection path (.json):", "", func(path string) {
-			reqs, col, err := parser.ParsePostmanCollection(path)
+			reqs, col, err := parser.ParsePostmanCollection(expandPath(path))
 			if err != nil {
 				a.showNotify("Import failed: "+err.Error(), true)
 				return
@@ -297,7 +312,19 @@ func (a *App) executeAction(action, _ string) tea.Cmd {
 				_ = a.store.SaveCollection(context.Background(), col)
 				a.collections = append(a.collections, col)
 				a.collectionList.setCollections(a.collections)
-				a.showNotify(fmt.Sprintf("Imported '%s' (%d requests)", col.Name, len(reqs)), false)
+				hasEmptyVars := false
+				for _, v := range col.Variables {
+					if v == "" {
+						hasEmptyVars = true
+						break
+					}
+				}
+				if len(col.Variables) > 0 && hasEmptyVars {
+					a.setStatus(fmt.Sprintf("Imported '%s' (%d requests) — fill in variable values below", col.Name, len(reqs)))
+					a.openVarsModal(col)
+				} else {
+					a.showNotify(fmt.Sprintf("Imported '%s' (%d requests)", col.Name, len(reqs)), false)
+				}
 			} else {
 				a.showNotify(fmt.Sprintf("Imported %d requests", len(reqs)), false)
 			}
