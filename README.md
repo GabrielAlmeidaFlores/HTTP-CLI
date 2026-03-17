@@ -30,22 +30,50 @@ A terminal-native HTTP client — like Postman, but lives in your terminal.
 
 ---
 
-## Requirements
+## Installation
 
-- Go 1.21+
+### Download binary (Linux / macOS)
+
+Go to the [Releases](https://github.com/GabrielAlmeidaFlores/HTTP-CLI/releases) page and download the binary for your platform.
+
+**Linux:**
+
+```bash
+curl -L https://github.com/GabrielAlmeidaFlores/HTTP-CLI/releases/latest/download/http-cli \
+  -o http-cli
+chmod +x http-cli
+sudo mv http-cli /usr/local/bin/http-cli
+```
+
+**macOS:**
+
+```bash
+curl -L https://github.com/GabrielAlmeidaFlores/HTTP-CLI/releases/latest/download/http-cli \
+  -o http-cli
+chmod +x http-cli
+sudo mv http-cli /usr/local/bin/http-cli
+```
+
+After installation, run from anywhere:
+
+```bash
+http-cli
+```
 
 ---
 
-## Installation
+### Build from source
+
+Requires **Go 1.21+**.
 
 ```bash
-git clone https://github.com/user/http-cli
-cd http-cli
+git clone https://github.com/GabrielAlmeidaFlores/HTTP-CLI.git
+cd HTTP-CLI
 go build -o http-cli ./cmd/http-cli
 ./http-cli
 ```
 
-Or run directly without building:
+Or run without building:
 
 ```bash
 go run ./cmd/http-cli
