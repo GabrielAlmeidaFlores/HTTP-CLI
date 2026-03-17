@@ -134,6 +134,31 @@ func (m *Manager) Load(projectConfigPath, userConfigPath string) error {
 	return nil
 }
 
+func (m *Manager) LoadFromBytes(data []byte, userConfigPath string) error {
+	var base Config
+	if err := json.Unmarshal(data, &base); err != nil {
+		return fmt.Errorf("parsing embedded config: %w", err)
+	}
+
+	if userConfigPath != "" {
+		if user, err := loadFile(userConfigPath); err == nil {
+			merge(&base, user)
+		}
+	}
+
+	m.mu.Lock()
+	m.config = &base
+	listeners := make([]func(*Config), len(m.listeners))
+	copy(listeners, m.listeners)
+	m.mu.Unlock()
+
+	for _, fn := range listeners {
+		fn(&base)
+	}
+
+	return nil
+}
+
 func (m *Manager) Get() *Config {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

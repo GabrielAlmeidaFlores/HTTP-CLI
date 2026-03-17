@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
+	appconfigs "github.com/user/http-cli/configs"
 	"github.com/user/http-cli/internal/config"
 	"github.com/user/http-cli/internal/exporter"
 	"github.com/user/http-cli/internal/parser"
@@ -84,8 +85,14 @@ func init() {
 
 func runTUI(cmd *cobra.Command, args []string) error {
 	cfgManager := config.NewManager()
-	if err := cfgManager.Load(findProjectConfig(), defaultUserConfig()); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: could not load config: %v\n", err)
+	projectCfg := findProjectConfig()
+	if projectCfg != "" {
+		if err := cfgManager.Load(projectCfg, defaultUserConfig()); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: could not load config: %v\n", err)
+			cfgManager.LoadFromBytes(appconfigs.DefaultConfig, defaultUserConfig())
+		}
+	} else {
+		cfgManager.LoadFromBytes(appconfigs.DefaultConfig, defaultUserConfig())
 	}
 
 	store, err := storage.NewStore(dataDir())
