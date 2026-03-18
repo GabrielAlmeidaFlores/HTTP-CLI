@@ -81,6 +81,32 @@ go run ./cmd/http-cli
 
 ---
 
+## Updating
+
+### Binary
+
+Re-run the same install command for your platform — it overwrites the existing binary:
+
+**Linux / macOS:**
+
+```bash
+curl -L https://github.com/GabrielAlmeidaFlores/HTTP-CLI/releases/latest/download/http-cli \
+  -o http-cli
+chmod +x http-cli
+sudo mv http-cli /usr/local/bin/http-cli
+```
+
+### From source
+
+```bash
+cd HTTP-CLI
+git pull
+go build -o http-cli ./cmd/http-cli
+sudo mv http-cli /usr/local/bin/http-cli
+```
+
+---
+
 ## Usage
 
 Run `./http-cli` to open the TUI. No arguments required.
