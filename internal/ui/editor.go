@@ -851,7 +851,15 @@ func (m *EditorModel) contentWidth() int {
 }
 
 func (m *EditorModel) tableMaxRows() int {
-	rows := m.height - 10
+	rows := m.height - 5
+	if rows < 3 {
+		return 3
+	}
+	return rows
+}
+
+func (m *EditorModel) tableMaxRowsBody() int {
+	rows := m.height - 7
 	if rows < 3 {
 		return 3
 	}
@@ -892,26 +900,19 @@ func (m *EditorModel) renderURLTab(focused bool) string {
 		urlLine = rowBg.Render("> "+padRight("URL", 10)+" ") + urlValStr
 	}
 
-	hint := buildHintsLine(m.keybindMgr, "editor", "URL", m.theme)
-	return strings.Join([]string{hdr, sep, methodLine, urlLine, "", hint}, "\n")
+	return strings.Join([]string{hdr, sep, methodLine, urlLine}, "\n")
 }
 
 func (m *EditorModel) renderHeadersTab(focused bool) string {
-	dim := dimStyle(m.theme)
 	cw := m.contentWidth()
-	hdr := dim.Render("  " + strings.Repeat("─", cw-2))
-	hint := buildHintsLine(m.keybindMgr, "editor", "Headers", m.theme)
 	content := m.headersTable.renderWithMaxRows(cw, focused, m.tableMaxRows())
-	return strings.Join([]string{content, hdr, hint}, "\n")
+	return content
 }
 
 func (m *EditorModel) renderQueryTab(focused bool) string {
-	dim := dimStyle(m.theme)
 	cw := m.contentWidth()
-	hdr := dim.Render("  " + strings.Repeat("─", cw-2))
-	hint := buildHintsLine(m.keybindMgr, "editor", "Query", m.theme)
 	content := m.queryTable.renderWithMaxRows(cw, focused, m.tableMaxRows())
-	return strings.Join([]string{content, hdr, hint}, "\n")
+	return content
 }
 
 func (m *EditorModel) renderBodyTab(focused bool) string {
@@ -949,11 +950,10 @@ func (m *EditorModel) renderBodyTab(focused bool) string {
 			}
 		}
 	case models.BodyFormData, models.BodyURLEncoded:
-		content = m.bodyFormTable.renderWithMaxRows(cw, contentFocused, m.tableMaxRows())
+		content = m.bodyFormTable.renderWithMaxRows(cw, contentFocused, m.tableMaxRowsBody())
 	}
 
-	hint := buildHintsLine(m.keybindMgr, "editor", "Body", m.theme)
-	return strings.Join([]string{typeLine, "", content, "", hint}, "\n")
+	return strings.Join([]string{typeLine, "", content}, "\n")
 }
 
 func (m *EditorModel) renderAuthTab(focused bool) string {
@@ -1003,10 +1003,8 @@ func (m *EditorModel) renderAuthTab(focused bool) string {
 		fieldLines = append(fieldLines, line)
 	}
 
-	hint := buildHintsLine(m.keybindMgr, "editor", "Auth", m.theme)
 	parts := []string{typeLine, hdr, sep}
 	parts = append(parts, fieldLines...)
-	parts = append(parts, "", hint)
 	return strings.Join(parts, "\n")
 }
 
