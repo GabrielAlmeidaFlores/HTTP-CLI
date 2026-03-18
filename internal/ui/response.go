@@ -98,7 +98,7 @@ func (m *ResponseModel) contentWidth() int {
 }
 
 func (m *ResponseModel) contentHeight() int {
-	h := m.height - 6
+	h := m.height - 2
 	if h < 1 {
 		h = 1
 	}
@@ -192,7 +192,7 @@ func (m *ResponseModel) renderBodyTab(theme config.ThemeConfig) string {
 
 	body := m.FormattedBody()
 	lines := strings.Split(body, "\n")
-	available := ch - 3
+	available := ch - 4
 	if available < 1 {
 		available = 1
 	}
@@ -228,7 +228,7 @@ func (m *ResponseModel) renderBodyTab(theme config.ThemeConfig) string {
 
 	parts := []string{statusLine + meta, sep, strings.Join(display, "\n")}
 	if scrollHint != "" {
-		parts = append(parts, scrollHint)
+		parts = append(parts, "", scrollHint)
 	}
 	return strings.Join(parts, "\n")
 }
@@ -269,7 +269,7 @@ func (m *ResponseModel) renderHeadersTab() string {
 	}
 
 	total := len(rows)
-	available := ch - 3
+	available := ch - 4
 	if available < 1 {
 		available = 1
 	}
@@ -293,7 +293,7 @@ func (m *ResponseModel) renderHeadersTab() string {
 	parts := []string{hdr, sep}
 	parts = append(parts, visible...)
 	if total > available {
-		parts = append(parts, dim.Render(fmt.Sprintf("  ↑↓ scroll  %d/%d", start+1, total)))
+		parts = append(parts, "", dim.Render(fmt.Sprintf("  ↑↓ scroll  %d/%d", start+1, total)))
 	}
 	return strings.Join(parts, "\n")
 }

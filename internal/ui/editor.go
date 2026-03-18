@@ -851,7 +851,15 @@ func (m *EditorModel) contentWidth() int {
 }
 
 func (m *EditorModel) tableMaxRows() int {
-	rows := m.height - 10
+	rows := m.height - 5
+	if rows < 3 {
+		return 3
+	}
+	return rows
+}
+
+func (m *EditorModel) tableMaxRowsBody() int {
+	rows := m.height - 7
 	if rows < 3 {
 		return 3
 	}
@@ -942,7 +950,7 @@ func (m *EditorModel) renderBodyTab(focused bool) string {
 			}
 		}
 	case models.BodyFormData, models.BodyURLEncoded:
-		content = m.bodyFormTable.renderWithMaxRows(cw, contentFocused, m.tableMaxRows())
+		content = m.bodyFormTable.renderWithMaxRows(cw, contentFocused, m.tableMaxRowsBody())
 	}
 
 	return strings.Join([]string{typeLine, "", content}, "\n")

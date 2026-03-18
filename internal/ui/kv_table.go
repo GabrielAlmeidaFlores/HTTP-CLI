@@ -417,7 +417,7 @@ func (t *kvTable) renderWithMaxRows(width int, insertMode bool, maxRows int) str
 	}
 	parts = append(parts, rows...)
 	if scrollIndicator != "" {
-		parts = append(parts, scrollIndicator)
+		parts = append(parts, "", scrollIndicator)
 	}
 	return strings.Join(parts, "\n")
 }
