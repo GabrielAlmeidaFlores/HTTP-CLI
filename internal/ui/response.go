@@ -187,13 +187,12 @@ func (m *ResponseModel) renderBodyTab(theme config.ThemeConfig) string {
 	statusStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(m.StatusColor(theme)))
 	statusLine := statusStyle.Render(fmt.Sprintf("%d %s", m.response.Status, m.response.StatusText))
 	meta := dimStyle(m.theme).Render(fmt.Sprintf("  %dms  %s", m.response.Duration.Milliseconds(), formatSize(m.response.Size)))
-	hint := buildHintsLine(m.keybindMgr, "response", "", m.theme)
 
 	sep := lipgloss.NewStyle().Foreground(lipgloss.Color(m.theme.SeparatorFg)).Render(strings.Repeat("─", cw))
 
 	body := m.FormattedBody()
 	lines := strings.Split(body, "\n")
-	available := ch - 4
+	available := ch - 3
 	if available < 1 {
 		available = 1
 	}
@@ -223,11 +222,14 @@ func (m *ResponseModel) renderBodyTab(theme config.ThemeConfig) string {
 		scrollHint = dimStyle(m.theme).Render(fmt.Sprintf("  ↑↓ scroll  %d/%d lines", start+1, total))
 	}
 
+	for len(display) < available {
+		display = append(display, "")
+	}
+
 	parts := []string{statusLine + meta, sep, strings.Join(display, "\n")}
 	if scrollHint != "" {
 		parts = append(parts, scrollHint)
 	}
-	parts = append(parts, hint)
 	return strings.Join(parts, "\n")
 }
 
@@ -283,8 +285,13 @@ func (m *ResponseModel) renderHeadersTab() string {
 		end = total
 	}
 
+	visible := rows[start:end]
+	for len(visible) < available {
+		visible = append(visible, "")
+	}
+
 	parts := []string{hdr, sep}
-	parts = append(parts, rows[start:end]...)
+	parts = append(parts, visible...)
 	if total > available {
 		parts = append(parts, dim.Render(fmt.Sprintf("  ↑↓ scroll  %d/%d", start+1, total)))
 	}

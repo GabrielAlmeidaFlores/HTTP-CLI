@@ -410,6 +410,11 @@ func (t *kvTable) renderWithMaxRows(width int, insertMode bool, maxRows int) str
 	}
 
 	parts := []string{hdr, sep}
+	if maxRows > 0 {
+		for len(rows) < maxRows {
+			rows = append(rows, "")
+		}
+	}
 	parts = append(parts, rows...)
 	if scrollIndicator != "" {
 		parts = append(parts, scrollIndicator)
